@@ -11,6 +11,7 @@
 
 - **[浏览公开题库](https://tokaiqwqteio.github.io/Problem-List-/)**：按知识点、难度、来源和状态查找题目，阅读题解与代码。
 - **[提交新题](https://problem-list-intake.acmtokaiteio.chatgpt.site/)**：使用获准的 GitHub 账号登录，通过六步表单创建题目 Pull Request。
+- **修改已有题目**：在公开题库中打开题目详情，点击“修改题目”，登录后会自动载入元数据、题解、代码与测试，提交修改 Pull Request。
 
 网页录题流程：
 
@@ -76,7 +77,7 @@ Windows 如果没有 `python` 命令，可以改用 `py problem_bank.py ...`。�
 
 ## Pull Request 与自动检查
 
-从题目录入台提交后，系统会创建 `submission/` 分支和普通 Pull Request。GitHub Actions 将自动：
+从题目录入台新增或修改题目后，系统会创建 `submission/` 或 `edit/` 分支和普通 Pull Request。GitHub Actions 将自动：
 
 1. 更新总索引、分类索引和网站数据；
 2. 校验目录结构、元数据与生成文件；

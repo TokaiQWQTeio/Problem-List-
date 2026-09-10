@@ -21,14 +21,14 @@
       <p class="eyebrow">PROBLEM INTAKE CONSOLE</p>
       <h1>把一道好题，<br><em>稳稳放进题库。</em></h1>
       <p class="lead">使用获准的 GitHub 账号登录。提交后系统会创建 Pull Request，经人工审核后才会进入题库。</p>
-      <a class="primary-button github" href="/auth/github">使用 GitHub 登录 <span>→</span></a>
+      <a id="github-login" class="primary-button github" href="/auth/github">使用 GitHub 登录 <span>→</span></a>
       <p id="login-message" class="message hidden"></p>
       <div class="trust-row"><span>7 天登录会话</span><span>不会执行代码</span><span>人工审核合并</span></div>
     </section>
 
     <section id="workspace" class="workspace hidden">
       <div class="workspace-head">
-        <div><p class="eyebrow">NEW PROBLEM</p><h1>提交新题</h1></div>
+        <div><p id="workspace-eyebrow" class="eyebrow">NEW PROBLEM</p><h1 id="workspace-title">提交新题</h1></div>
         <div class="user-box"><span id="username"></span><button id="logout" class="text-button">退出</button></div>
       </div>
 
@@ -68,6 +68,7 @@
             <label>正确性证明<textarea name="proof" required rows="7"></textarea></label>
             <label>易错点与复盘<textarea name="pitfalls" required rows="5"></textarea></label>
             <label>复杂度<textarea name="complexity" required rows="3" placeholder="时间复杂度：O(...)&#10;空间复杂度：O(...)"></textarea></label>
+            <label>测试说明<textarea name="test_notes" rows="3" placeholder="记录样例、边界情况或测试目的（可留空）。"></textarea></label>
           </div>
         </section>
 
@@ -95,8 +96,9 @@ int main() {
         <section class="form-step hidden" data-step="5">
           <div class="section-title"><span>06</span><div><h2>预览并提交</h2><p>确认后会创建独立分支和 Pull Request，不会自动合并。</p></div></div>
           <div id="preview" class="preview"></div>
-          <label class="confirmation"><input id="confirm" type="checkbox" required> 我确认内容为自己整理的摘要与解法，来源链接正确，并同意通过 Pull Request 接受审核。</label>
-          <button id="submit" type="submit" class="primary-button">创建 Pull Request <span>→</span></button>
+          <label id="change-summary-row" class="hidden">修改说明<textarea name="change_summary" maxlength="1000" rows="3" placeholder="例如：修正解题思路，并补充边界测试。"></textarea><small>编辑题目时必填，将写入 Pull Request 标题和说明。</small></label>
+          <label class="confirmation"><input id="confirm" type="checkbox" required> <span id="confirmation-text">我确认内容为自己整理的摘要与解法，来源链接正确，并同意通过 Pull Request 接受审核。</span></label>
+          <button id="submit" type="submit" class="primary-button"><span id="submit-label">创建 Pull Request</span><span>→</span></button>
           <div id="submit-message" class="message hidden"></div>
         </section>
 
@@ -105,6 +107,6 @@ int main() {
     </section>
   </main>
   <footer>ALGO INDEX · 题目录入台 · C++20</footer>
-  <script type="module" src="/app.js?build=20260911-1"></script>
+  <script type="module" src="/app.js?build=20260911-2"></script>
 </body>
 </html>

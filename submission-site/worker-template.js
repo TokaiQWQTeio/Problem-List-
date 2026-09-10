@@ -3,6 +3,7 @@ const SUBMITTERS = __SUBMITTERS_JSON__;
 const ASSETS = __ASSETS_JSON__;
 
 const COOKIE_NAME = "algo_intake_session";
+const RETURN_COOKIE_NAME = "algo_intake_return_to";
 const SESSION_SECONDS = 7 * 24 * 60 * 60;
 const OAUTH_STATE_SECONDS = 10 * 60;
 const DIFFICULTIES = ["入门", "简单", "中等", "困难", "极难"];
@@ -77,6 +78,15 @@ function sessionCookie(value, maxAge = SESSION_SECONDS) {
   return `${COOKIE_NAME}=${encodeURIComponent(value)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
 }
 
+function returnCookie(value, maxAge = OAUTH_STATE_SECONDS) {
+  return `${RETURN_COOKIE_NAME}=${encodeURIComponent(value)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
+}
+
+function safeReturnTo(value) {
+  const text = String(value || "");
+  return /^\/\?(?:edit=[a-z0-9-]+)?$/.test(text) ? text : "/";
+}
+
 function oauthRedirectUri(request) {
   return `${new URL(request.url).origin}/auth/callback`;
 }
@@ -136,7 +146,11 @@ async function beginOAuth(request, env) {
     scope: "public_repo read:user",
     state,
   });
-  return Response.redirect(`https://github.com/login/oauth/authorize?${params}`, 302);
+  const returnTo = safeReturnTo(new URL(request.url).searchParams.get("return_to"));
+  return new Response(null, {
+    status: 302,
+    headers: { location: `https://github.com/login/oauth/authorize?${params}`, "set-cookie": returnCookie(returnTo) },
+  });
 }
 
 async function finishOAuth(request, env) {
@@ -178,13 +192,24 @@ async function finishOAuth(request, env) {
   await env.DB.prepare(
     "INSERT INTO sessions (session_hash, username, github_user_id, encrypted_access_token, token_nonce, csrf_token, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
   ).bind(await sha256(rawSession), user.login, String(user.id), encrypted.encrypted, encrypted.nonce, csrf, expiresAt, new Date().toISOString()).run();
-  return new Response(null, { status: 302, headers: { location: `${url.origin}/`, "set-cookie": sessionCookie(rawSession) } });
+  const returnTo = safeReturnTo(getCookie(request, RETURN_COOKIE_NAME));
+  const headers = new Headers({ location: `${url.origin}${returnTo}` });
+  headers.append("set-cookie", sessionCookie(rawSession));
+  headers.append("set-cookie", returnCookie("", 0));
+  return new Response(null, { status: 302, headers });
 }
 
 function cleanLine(value, field, max = 160) {
   const text = String(value ?? "").trim();
   if (!text) throw new Error(`${field}不能为空`);
   if (text.length > max || /[\r\n\0]/.test(text)) throw new Error(`${field}格式不正确`);
+  return text;
+}
+
+function cleanDescription(value, field, max = 1000) {
+  const text = String(value ?? "").trim();
+  if (!text) throw new Error(`${field}不能为空`);
+  if (text.length > max || text.includes("\0")) throw new Error(`${field}格式不正确`);
   return text;
 }
 
@@ -199,7 +224,7 @@ function markdownCell(value) {
   return String(value || "—").replaceAll("|", "\\|").replaceAll("\n", " ");
 }
 
-function validateSubmission(body) {
+function validateSubmission(body, mode = "create") {
   if (!body || typeof body !== "object") throw new Error("提交内容格式不正确");
   const title = cleanLine(body.title, "题目名称", 200);
   const problemId = cleanLine(body.problem_id, "平台题号", 100);
@@ -225,22 +250,29 @@ function validateSubmission(body) {
     if (!sections[key]) throw new Error(`${label}不能为空`);
     if (encoder.encode(sections[key]).byteLength > 100_000) throw new Error(`${label}内容过长`);
   }
+  sections.test_notes = String(body.test_notes || "").trim();
+  if (encoder.encode(sections.test_notes).byteLength > 100_000) throw new Error("测试说明内容过长");
   const code = String(body.code || "");
   if (!code.trim()) throw new Error("C++20 代码不能为空");
   if (encoder.encode(code).byteLength > 200_000) throw new Error("C++ 代码不能超过 200KB");
   if (!Array.isArray(body.tests) || body.tests.length < 1 || body.tests.length > 20) throw new Error("测试数据必须为 1–20 组");
+  const usedTestNames = new Set();
   const tests = body.tests.map((test, index) => {
     const input = String(test?.input ?? "");
     const output = String(test?.output ?? "");
     if (encoder.encode(input).byteLength > 1_000_000 || encoder.encode(output).byteLength > 1_000_000) throw new Error(`第 ${index + 1} 组测试超过 1MB`);
-    return { input, output };
+    const testName = String(test?.name || `test${String(index + 1).padStart(2, "0")}`);
+    if (!/^[A-Za-z0-9_-]{1,80}$/.test(testName) || usedTestNames.has(testName)) throw new Error(`第 ${index + 1} 组测试名称无效或重复`);
+    usedTestNames.add(testName);
+    return { name: testName, input, output };
   });
   const folder = `${sourceId}-${slugify(problemId, "平台题号")}-${englishName}`;
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(folder) || folder.length > 180) throw new Error("生成的目录名无效或过长");
-  return { title, problemId, englishName, sourceId, sourceName, url, topics, primaryTopic, originalDifficulty, timeLimit, sections, code, tests, folder, difficulty: body.difficulty_unified, status: body.status };
+  const changeSummary = mode === "edit" ? cleanDescription(body.change_summary, "修改说明", 1000) : "";
+  return { title, problemId, englishName, sourceId, sourceName, url, topics, primaryTopic, originalDifficulty, timeLimit, sections, code, tests, folder, difficulty: body.difficulty_unified, status: body.status, changeSummary };
 }
 
-function buildFiles(value) {
+function buildFiles(value, createdAt = new Date().toISOString().slice(0, 10)) {
   const topicMap = new Map(TAXONOMY.categories.flatMap((category) => category.topics.map((topic) => [topic.id, topic.name])));
   const metadata = {
     schema_version: 1,
@@ -255,7 +287,7 @@ function buildFiles(value) {
     status: value.status,
     cpp_standard: "C++20",
     time_limit_seconds: value.timeLimit,
-    created_at: new Date().toISOString().slice(0, 10),
+    created_at: createdAt,
   };
   const link = value.url ? `[打开题目](${value.url})` : "—";
   const rows = [
@@ -265,18 +297,124 @@ function buildFiles(value) {
     ["语言标准", "C++20"], ["运行超时", `${value.timeLimit} 秒`],
   ];
   const table = ["<!-- METADATA:START -->", "", "| 属性 | 内容 |", "|---|---|", ...rows.map(([key, item]) => `| ${key} | ${markdownCell(item)} |`), "", "<!-- METADATA:END -->"].join("\n");
-  const readme = `# ${value.title}\n\n${table}\n\n## 题目描述\n\n${value.sections.summary}\n\n## 输入格式\n\n${value.sections.input_format}\n\n## 输出格式\n\n${value.sections.output_format}\n\n## 解题思路\n\n${value.sections.solution}\n\n## 正确性证明\n\n${value.sections.proof}\n\n## 易错点与复盘\n\n${value.sections.pitfalls}\n\n## 复杂度\n\n${value.sections.complexity}\n\n## 测试说明\n\n共提交 ${value.tests.length} 组输入输出测试。\n`;
+  const testNotes = value.sections.test_notes || `共提交 ${value.tests.length} 组输入输出测试。`;
+  const readme = `# ${value.title}\n\n${table}\n\n## 题目描述\n\n${value.sections.summary}\n\n## 输入格式\n\n${value.sections.input_format}\n\n## 输出格式\n\n${value.sections.output_format}\n\n## 解题思路\n\n${value.sections.solution}\n\n## 正确性证明\n\n${value.sections.proof}\n\n## 易错点与复盘\n\n${value.sections.pitfalls}\n\n## 复杂度\n\n${value.sections.complexity}\n\n## 测试说明\n\n${testNotes}\n`;
   const files = [
     { path: `problems/${value.folder}/problem.json`, content: `${JSON.stringify(metadata, null, 2)}\n` },
     { path: `problems/${value.folder}/README.md`, content: readme },
     { path: `problems/${value.folder}/solution.cpp`, content: value.code.endsWith("\n") ? value.code : `${value.code}\n` },
   ];
-  value.tests.forEach((test, index) => {
-    const name = `test${String(index + 1).padStart(2, "0")}`;
-    files.push({ path: `problems/${value.folder}/tests/${name}.in`, content: test.input });
-    files.push({ path: `problems/${value.folder}/tests/${name}.out`, content: test.output });
+  value.tests.forEach((test) => {
+    files.push({ path: `problems/${value.folder}/tests/${test.name}.in`, content: test.input });
+    files.push({ path: `problems/${value.folder}/tests/${test.name}.out`, content: test.output });
   });
   return { metadata, files };
+}
+
+function repositoryPath(path) {
+  return path.split("/").map(encodeURIComponent).join("/");
+}
+
+function decodeGithubContent(value) {
+  const binary = atob(String(value || "").replace(/\s/g, ""));
+  return new TextDecoder().decode(Uint8Array.from(binary, (character) => character.charCodeAt(0)));
+}
+
+async function readRepositoryFile(owner, name, path, ref, token) {
+  const file = await github(`/repos/${owner}/${name}/contents/${repositoryPath(path)}?ref=${encodeURIComponent(ref)}`, token);
+  if (file.type !== "file" || file.encoding !== "base64") throw new Error(`无法读取 ${path}`);
+  return { content: decodeGithubContent(file.content), sha: file.sha };
+}
+
+function readEditorialSections(readme) {
+  const keys = new Map([
+    ["题目描述", "summary"], ["输入格式", "input_format"], ["输出格式", "output_format"],
+    ["解题思路", "solution"], ["正确性证明", "proof"], ["易错点与复盘", "pitfalls"],
+    ["复杂度", "complexity"], ["测试说明", "test_notes"],
+  ]);
+  const sections = Object.fromEntries([...keys.values()].map((key) => [key, ""]));
+  let current = "";
+  const buffers = new Map();
+  for (const line of String(readme).replace(/\r\n?/g, "\n").split("\n")) {
+    const heading = line.match(/^##\s+(.+?)\s*$/);
+    if (heading) {
+      current = keys.get(heading[1]) || "";
+      if (current && !buffers.has(current)) buffers.set(current, []);
+      continue;
+    }
+    if (current) buffers.get(current).push(line);
+  }
+  for (const [key, lines] of buffers) sections[key] = lines.join("\n").trim();
+  return sections;
+}
+
+async function folderState(owner, name, folder, commitSha, token) {
+  const commit = await github(`/repos/${owner}/${name}/git/commits/${encodeURIComponent(commitSha)}`, token);
+  const tree = await github(`/repos/${owner}/${name}/git/trees/${encodeURIComponent(commit.tree.sha)}?recursive=1`, token);
+  const root = `problems/${folder}`;
+  const folderEntry = tree.tree.find((entry) => entry.type === "tree" && entry.path === root);
+  if (!folderEntry) {
+    const error = new Error(`题目目录 ${root} 不存在。`);
+    error.status = 404;
+    throw error;
+  }
+  return {
+    commit,
+    folderSha: folderEntry.sha,
+    entries: tree.tree.filter((entry) => entry.type === "blob" && entry.path.startsWith(`${root}/`)),
+  };
+}
+
+async function loadProblem(folder, session) {
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(folder)) throw new Error("题目标识无效");
+  const { owner, name, default_branch: defaultBranch } = SUBMITTERS.repository;
+  const repository = await github(`/repos/${owner}/${name}`, session.token);
+  if (!repository.permissions?.push) {
+    const error = new Error("你的仓库写入权限已被移除。");
+    error.status = 403;
+    throw error;
+  }
+  const ref = await github(`/repos/${owner}/${name}/git/ref/heads/${encodeURIComponent(defaultBranch)}`, session.token);
+  const root = `problems/${folder}`;
+  const [metadataFile, readmeFile, solutionFile, testListing] = await Promise.all([
+    readRepositoryFile(owner, name, `${root}/problem.json`, ref.object.sha, session.token),
+    readRepositoryFile(owner, name, `${root}/README.md`, ref.object.sha, session.token),
+    readRepositoryFile(owner, name, `${root}/solution.cpp`, ref.object.sha, session.token),
+    github(`/repos/${owner}/${name}/contents/${repositoryPath(`${root}/tests`)}?ref=${encodeURIComponent(ref.object.sha)}`, session.token),
+  ]);
+  const metadata = JSON.parse(metadataFile.content);
+  const prefix = `${metadata.source.id}-${slugify(metadata.problem_id, "平台题号")}-`;
+  const englishName = folder.startsWith(prefix) ? folder.slice(prefix.length) : folder;
+  const filesByName = new Map(testListing.filter((item) => item.type === "file").map((item) => [item.name, item]));
+  const stems = [...new Set([...filesByName.keys()].filter((filename) => /\.(?:in|out)$/.test(filename)).map((filename) => filename.replace(/\.(?:in|out)$/, "")))].sort();
+  const tests = await Promise.all(stems.filter((stem) => filesByName.has(`${stem}.in`) && filesByName.has(`${stem}.out`)).map(async (stem) => {
+    const [input, output] = await Promise.all([
+      readRepositoryFile(owner, name, `${root}/tests/${stem}.in`, ref.object.sha, session.token),
+      readRepositoryFile(owner, name, `${root}/tests/${stem}.out`, ref.object.sha, session.token),
+    ]);
+    return { name: stem, input: input.content, output: output.content };
+  }));
+  const sections = readEditorialSections(readmeFile.content);
+  return {
+    base_sha: ref.object.sha,
+    problem: {
+      title: metadata.title,
+      problem_id: String(metadata.problem_id),
+      english_name: englishName,
+      url: metadata.url || "",
+      source_name: metadata.source.name,
+      source_id: metadata.source.id,
+      difficulty_unified: metadata.difficulty.unified,
+      difficulty_original: metadata.difficulty.original || "",
+      status: metadata.status,
+      time_limit_seconds: metadata.time_limit_seconds,
+      primary_topic: metadata.primary_topic,
+      topics: metadata.topics,
+      ...sections,
+      code: solutionFile.content,
+      tests,
+    },
+  };
 }
 
 async function createSubmission(request, env, session) {
@@ -336,6 +474,114 @@ async function createSubmission(request, env, session) {
   }
 }
 
+async function createEdit(request, env, session) {
+  if (request.headers.get("x-csrf-token") !== session.csrf_token) return json({ error: "安全令牌已失效，请刷新页面后重试。" }, 403);
+  const length = Number(request.headers.get("content-length") || 0);
+  if (length > 10_000_000) return json({ error: "整个请求不能超过 10MB。" }, 413);
+  let body;
+  let value;
+  let originalFolder;
+  let baseSha;
+  try {
+    const rawBody = await request.text();
+    if (encoder.encode(rawBody).byteLength > 10_000_000) return json({ error: "整个请求不能超过 10MB。" }, 413);
+    body = JSON.parse(rawBody);
+    value = validateSubmission(body, "edit");
+    originalFolder = String(body.original_folder || "");
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(originalFolder)) throw new Error("原题目录无效");
+    baseSha = String(body.base_sha || "");
+    if (!/^[0-9a-f]{40}$/i.test(baseSha)) throw new Error("原题版本无效，请重新载入页面");
+  } catch (error) {
+    return json({ error: error instanceof SyntaxError ? "提交内容不是有效 JSON。" : error.message }, 400);
+  }
+
+  const { owner, name, default_branch: defaultBranch, reviewer } = SUBMITTERS.repository;
+  try {
+    const repository = await github(`/repos/${owner}/${name}`, session.token);
+    if (!repository.permissions?.push) return json({ error: "你的仓库写入权限已被移除。" }, 403);
+
+    const openPulls = await github(`/repos/${owner}/${name}/pulls?state=open&base=${encodeURIComponent(defaultBranch)}&per_page=100`, session.token);
+    const existingPull = openPulls.find((pull) => pull.head?.ref?.startsWith(`edit/${originalFolder}-`));
+    if (existingPull) return json({ error: `这道题已有待审核的修改 Pull Request #${existingPull.number}。`, url: existingPull.html_url }, 409);
+
+    const ref = await github(`/repos/${owner}/${name}/git/ref/heads/${encodeURIComponent(defaultBranch)}`, session.token);
+    const [baseState, currentState] = await Promise.all([
+      folderState(owner, name, originalFolder, baseSha, session.token),
+      folderState(owner, name, originalFolder, ref.object.sha, session.token),
+    ]);
+    if (baseState.folderSha !== currentState.folderSha) {
+      return json({ error: "这道题在你编辑期间已发生变化。请刷新页面重新载入后再修改。" }, 409);
+    }
+
+    if (value.folder !== originalFolder) {
+      try {
+        await github(`/repos/${owner}/${name}/contents/problems/${value.folder}?ref=${encodeURIComponent(ref.object.sha)}`, session.token);
+        return json({ error: `目标目录 problems/${value.folder} 已存在。` }, 409);
+      } catch (error) { if (error.status !== 404) throw error; }
+    }
+
+    const metadataFile = await readRepositoryFile(owner, name, `problems/${originalFolder}/problem.json`, baseSha, session.token);
+    const originalMetadata = JSON.parse(metadataFile.content);
+    const { files } = buildFiles(value, originalMetadata.created_at || new Date().toISOString().slice(0, 10));
+    const treeItems = [];
+    for (const file of files) {
+      const blob = await github(`/repos/${owner}/${name}/git/blobs`, session.token, { method: "POST", body: JSON.stringify({ content: file.content, encoding: "utf-8" }) });
+      treeItems.push({ path: file.path, mode: "100644", type: "blob", sha: blob.sha });
+    }
+
+    const newPaths = new Set(files.map((file) => file.path));
+    const originalRoot = `problems/${originalFolder}/`;
+    const managedRelativePath = (path) => ["problem.json", "README.md", "solution.cpp"].includes(path) || /^tests\/[^/]+\.(?:in|out)$/.test(path);
+    if (value.folder === originalFolder) {
+      for (const entry of currentState.entries) {
+        const relative = entry.path.slice(originalRoot.length);
+        if (managedRelativePath(relative) && !newPaths.has(entry.path)) treeItems.push({ path: entry.path, mode: "100644", type: "blob", sha: null });
+      }
+    } else {
+      for (const entry of currentState.entries) {
+        const relative = entry.path.slice(originalRoot.length);
+        if (!managedRelativePath(relative)) treeItems.push({ path: `problems/${value.folder}/${relative}`, mode: "100644", type: "blob", sha: entry.sha });
+        treeItems.push({ path: entry.path, mode: "100644", type: "blob", sha: null });
+      }
+    }
+
+    const tree = await github(`/repos/${owner}/${name}/git/trees`, session.token, { method: "POST", body: JSON.stringify({ base_tree: currentState.commit.tree.sha, tree: treeItems }) });
+    if (tree.sha === currentState.commit.tree.sha) return json({ error: "没有检测到任何修改。" }, 400);
+    const commit = await github(`/repos/${owner}/${name}/git/commits`, session.token, {
+      method: "POST",
+      body: JSON.stringify({ message: `修改题目：${value.title}`, tree: tree.sha, parents: [ref.object.sha] }),
+    });
+    const branch = `edit/${originalFolder}-${Date.now().toString(36)}`;
+    await github(`/repos/${owner}/${name}/git/refs`, session.token, { method: "POST", body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: commit.sha }) });
+    const pathLine = value.folder === originalFolder
+      ? `- 目录：\`problems/${value.folder}\``
+      : `- 目录迁移：\`problems/${originalFolder}\` → \`problems/${value.folder}\``;
+    const quotedSummary = value.changeSummary.split(/\r?\n/).map((line) => `> ${line}`).join("\n");
+    const prBody = [
+      "## 修改说明", "", quotedSummary, "", "## 题目信息", "",
+      `- 题目：${value.title}`, `- 来源 / 题号：${value.sourceName} / ${value.problemId}`,
+      pathLine, `- 提交者：@${session.username}`, "", "## 审核清单", "",
+      "- [ ] 修改说明与实际差异一致", "- [ ] 题目元数据和目录路径正确", "- [ ] 题解与 C++20 代码正确",
+      "- [ ] 测试数据至少保留一组且输入输出成对", "- [ ] 自动生成的索引已更新", "",
+      "> 此 PR 由 ALGO INDEX 题目录入台创建；不会自动合并。",
+    ].join("\n");
+    const titleSummary = value.changeSummary.replace(/\s+/g, " ").slice(0, 60);
+    const pull = await github(`/repos/${owner}/${name}/pulls`, session.token, {
+      method: "POST",
+      body: JSON.stringify({ title: `修改 ${value.problemId}：${titleSummary}`, head: branch, base: defaultBranch, body: prBody, maintainer_can_modify: true }),
+    });
+    if (reviewer && reviewer.toLowerCase() !== session.username.toLowerCase()) {
+      try {
+        await github(`/repos/${owner}/${name}/pulls/${pull.number}/requested_reviewers`, session.token, { method: "POST", body: JSON.stringify({ reviewers: [reviewer] }) });
+      } catch { /* PR exists even if reviewer assignment is unavailable. */ }
+    }
+    return json({ ok: true, number: pull.number, url: pull.html_url, path: `problems/${value.folder}` }, 201);
+  } catch (error) {
+    const status = error.status && error.status < 500 ? error.status : 502;
+    return json({ error: error.status === 422 ? "GitHub 拒绝了本次修改，可能存在同名分支或冲突。" : `创建修改 Pull Request 失败：${error.message}` }, status);
+  }
+}
+
 async function router(request, env) {
   const url = new URL(request.url);
   if (request.method === "GET" && url.pathname === "/") return asset("index.html", "text/html");
@@ -352,10 +598,22 @@ async function router(request, env) {
     const session = await currentSession(request, env);
     return json(session ? { authenticated: true, username: session.username, csrf: session.csrf_token, taxonomy: TAXONOMY, repository: SUBMITTERS.repository } : { authenticated: false });
   }
+  if (request.method === "GET" && url.pathname.startsWith("/api/problems/")) {
+    const session = await currentSession(request, env);
+    if (!session) return json({ error: "请先使用获准的 GitHub 账号登录。" }, 401);
+    const folder = decodeURIComponent(url.pathname.slice("/api/problems/".length));
+    try { return json(await loadProblem(folder, session)); }
+    catch (error) { return json({ error: `载入题目失败：${error.message}` }, error.status && error.status < 500 ? error.status : 502); }
+  }
   if (request.method === "POST" && url.pathname === "/api/submissions") {
     const session = await currentSession(request, env);
     if (!session) return json({ error: "请先使用获准的 GitHub 账号登录。" }, 401);
     return createSubmission(request, env, session);
+  }
+  if (request.method === "POST" && url.pathname === "/api/edits") {
+    const session = await currentSession(request, env);
+    if (!session) return json({ error: "请先使用获准的 GitHub 账号登录。" }, 401);
+    return createEdit(request, env, session);
   }
   return json({ error: "Not found" }, 404);
 }
@@ -366,3 +624,5 @@ export default {
     catch (error) { return json({ error: `服务暂时不可用：${error.message}` }, 500); }
   },
 };
+
+export { buildFiles, readEditorialSections, validateSubmission };

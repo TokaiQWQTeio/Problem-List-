@@ -186,6 +186,8 @@ function openProblem(directory) {
   ].map((value) => `<span class="meta-pill">${escapeHtml(value)}</span>`);
   const externalUrl = safeExternalUrl(problem.url);
   if (externalUrl) meta.push(`<a href="${escapeHtml(externalUrl)}" target="_blank" rel="noreferrer">打开原题 ↗</a>`);
+  const editUrl = `https://problem-list-intake.acmtokaiteio.chatgpt.site/?edit=${encodeURIComponent(problem.directory)}`;
+  meta.push(`<a href="${escapeHtml(editUrl)}" target="_blank" rel="noreferrer">修改题目 ↗</a>`);
   document.querySelector("#dialogMeta").innerHTML = meta.join("");
   document.querySelector("#notesPanel").innerHTML = problem.notes
     ? `<div class="notes-content">${renderMarkdown(problem.notes)}</div>`

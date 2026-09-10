@@ -4,6 +4,6 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build-submission-site.mjs",
-    "check": "node scripts/build-submission-site.mjs && node --check dist/server/index.js && node --check submission-site/public/app.js && node --check dist/markdown.js && node --check dist/app.js && node tests/test_markdown_renderer.mjs"
+    "check": "node scripts/build-submission-site.mjs && node --check dist/server/index.js && node --check submission-site/public/app.js && node --check dist/markdown.js && node --check dist/app.js && node tests/test_markdown_renderer.mjs && node tests/test_edit_submission.mjs"
   }
 }
