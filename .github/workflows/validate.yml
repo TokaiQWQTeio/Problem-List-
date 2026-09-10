@@ -22,5 +22,7 @@ jobs:
         run: |
           node --check dist/app.js
           python -m json.tool dist/data.json > /dev/null
+      - name: Build and validate submission website
+        run: npm run check
       - name: Compile and test solved problems
         run: python problem_bank.py test --all-solved

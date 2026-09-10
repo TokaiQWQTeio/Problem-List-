@@ -1,0 +1,9 @@
+{
+  "name": "algo-index-intake",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-submission-site.mjs",
+    "check": "node scripts/build-submission-site.mjs && node --check dist/server/index.js && node --check submission-site/public/app.js"
+  }
+}

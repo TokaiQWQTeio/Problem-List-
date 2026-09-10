@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(os.environ.get("PROBLEM_BANK_ROOT", Path(__file__).resolve().parent)).resolve()
 PROBLEMS_DIR = ROOT / "problems"
 INDEXES_DIR = ROOT / "indexes"
 TAXONOMY_FILE = ROOT / "config" / "taxonomy.json"

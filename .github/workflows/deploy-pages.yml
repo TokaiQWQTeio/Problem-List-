@@ -34,10 +34,15 @@ jobs:
       - name: Validate website JavaScript
         run: node --check dist/app.js
 
+      - name: Prepare public website artifact
+        run: |
+          mkdir pages-site
+          cp dist/index.html dist/styles.css dist/app.js dist/data.json pages-site/
+
       - name: Upload website
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: ./pages-site
 
       - name: Deploy website
         id: deployment

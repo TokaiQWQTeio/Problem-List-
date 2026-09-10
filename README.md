@@ -22,6 +22,13 @@ Windows 如果没有 `python` 命令，可以使用 `py problem_bank.py ...`。
 - [使用与维护指南](docs/GUIDE.md)
 - [算法分类配置](config/taxonomy.json)
 - [题库网站](dist/index.html)
+- [题目录入台配置与维护](docs/INTAKE.md)
+
+## 题目录入台
+
+获准的 GitHub 协作者可以在“题目录入台”中填写完整题目信息、C++20 解法和测试数据。系统会为每道新题创建独立分支和普通 Pull Request；GitHub Actions 自动更新索引并执行结构校验、编译与测试，最终仍由人工审核合并。
+
+提交者白名单位于 `config/submitters.json`。新增使用者时，还需要在 GitHub 仓库中授予其 Write 权限。
 
 ## 设计原则
 

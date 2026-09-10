@@ -1,0 +1,11 @@
+{
+  "allowed_github_users": [
+    "TokaiQWQTeio"
+  ],
+  "repository": {
+    "owner": "TokaiQWQTeio",
+    "name": "Problem-List-",
+    "default_branch": "main",
+    "reviewer": "TokaiQWQTeio"
+  }
+}

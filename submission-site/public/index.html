@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ALGO INDEX 题目录入台，通过 GitHub 登录并创建题目 Pull Request。">
+  <title>题目录入台 · ALGO INDEX</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="noise"></div>
+  <header class="topbar">
+    <a class="brand" href="https://tokaiqwqteio.github.io/Problem-List-/"><span>ALGO</span> INDEX</a>
+    <a class="browse-link" href="https://tokaiqwqteio.github.io/Problem-List-/">浏览题库 ↗</a>
+  </header>
+
+  <main>
+    <section id="loading" class="panel centered"><div class="spinner"></div><p>正在确认登录状态…</p></section>
+
+    <section id="login" class="hero hidden">
+      <p class="eyebrow">PROBLEM INTAKE CONSOLE</p>
+      <h1>把一道好题，<br><em>稳稳放进题库。</em></h1>
+      <p class="lead">使用获准的 GitHub 账号登录。提交后系统会创建 Pull Request，经人工审核后才会进入题库。</p>
+      <a class="primary-button github" href="/auth/github">使用 GitHub 登录 <span>→</span></a>
+      <p id="login-message" class="message hidden"></p>
+      <div class="trust-row"><span>7 天登录会话</span><span>不会执行代码</span><span>人工审核合并</span></div>
+    </section>
+
+    <section id="workspace" class="workspace hidden">
+      <div class="workspace-head">
+        <div><p class="eyebrow">NEW PROBLEM</p><h1>提交新题</h1></div>
+        <div class="user-box"><span id="username"></span><button id="logout" class="text-button">退出</button></div>
+      </div>
+
+      <nav id="steps" class="steps" aria-label="录入步骤"></nav>
+      <form id="problem-form" novalidate>
+        <section class="form-step" data-step="0">
+          <div class="section-title"><span>01</span><div><h2>基本信息</h2><p>确定题目的身份与原始出处。</p></div></div>
+          <div class="grid two">
+            <label>题目名称<input name="title" maxlength="200" required placeholder="例如：两数之和"></label>
+            <label>平台题号<input name="problem_id" maxlength="100" required placeholder="例如：1A / P1000"></label>
+            <label>英文短名<input name="english_name" maxlength="80" pattern="[A-Za-z0-9_-]+" required placeholder="例如：two-sum"><small>用于目录名，仅限字母、数字、连字符和下划线。</small></label>
+            <label>题目链接<input name="url" type="url" maxlength="1000" placeholder="https://..."></label>
+            <label>来源名称<input name="source_name" maxlength="80" required placeholder="例如：Codeforces"></label>
+            <label>来源英文标识<input name="source_id" maxlength="40" pattern="[A-Za-z0-9_-]+" required placeholder="例如：codeforces"></label>
+          </div>
+        </section>
+
+        <section class="form-step hidden" data-step="1">
+          <div class="section-title"><span>02</span><div><h2>分类与进度</h2><p>先按算法知识点，再记录难度、状态与运行限制。</p></div></div>
+          <div class="grid two">
+            <label>统一难度<select name="difficulty_unified" required><option>入门</option><option>简单</option><option selected>中等</option><option>困难</option><option>极难</option></select></label>
+            <label>平台原始难度<input name="difficulty_original" maxlength="100" placeholder="例如：1200 / Easy"></label>
+            <label>状态<select name="status" required><option selected>待做</option><option>尝试中</option><option>已解决</option><option>需复习</option></select></label>
+            <label>运行超时（秒）<input name="time_limit_seconds" type="number" min="0.01" max="120" step="0.01" value="2" required></label>
+          </div>
+          <fieldset><legend>知识点（可多选）</legend><div id="topics" class="topic-groups"></div></fieldset>
+          <label>主要知识点<select id="primary-topic" name="primary_topic" required><option value="">请先选择知识点</option></select></label>
+        </section>
+
+        <section class="form-step hidden" data-step="2">
+          <div class="section-title"><span>03</span><div><h2>题解内容</h2><p>保存原创摘要、分析与复盘；不复制完整题面。</p></div></div>
+          <div class="stack">
+            <label>原创题目摘要<textarea name="summary" required rows="5" placeholder="用自己的话概括问题、目标与关键约束。"></textarea></label>
+            <label>输入格式<textarea name="input_format" required rows="4"></textarea></label>
+            <label>输出格式<textarea name="output_format" required rows="4"></textarea></label>
+            <label>解题思路<textarea name="solution" required rows="8"></textarea></label>
+            <label>正确性证明<textarea name="proof" required rows="7"></textarea></label>
+            <label>易错点与复盘<textarea name="pitfalls" required rows="5"></textarea></label>
+            <label>复杂度<textarea name="complexity" required rows="3" placeholder="时间复杂度：O(...)&#10;空间复杂度：O(...)"></textarea></label>
+          </div>
+        </section>
+
+        <section class="form-step hidden" data-step="3">
+          <div class="section-title"><span>04</span><div><h2>C++20 代码</h2><p>最多 200KB。这里只保存文本，服务器不会编译或运行。</p></div></div>
+          <label><span class="sr-only">C++20 代码</span><textarea id="code" class="code" name="code" required spellcheck="false" rows="24">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    return 0;
+}
+</textarea></label>
+          <p id="code-size" class="counter"></p>
+        </section>
+
+        <section class="form-step hidden" data-step="4">
+          <div class="section-title"><span>05</span><div><h2>测试数据</h2><p>添加 1–20 组输入输出，每个文件不超过 1MB。</p></div></div>
+          <div id="tests" class="tests"></div>
+          <button id="add-test" type="button" class="secondary-button">＋ 添加一组测试</button>
+        </section>
+
+        <section class="form-step hidden" data-step="5">
+          <div class="section-title"><span>06</span><div><h2>预览并提交</h2><p>确认后会创建独立分支和 Pull Request，不会自动合并。</p></div></div>
+          <div id="preview" class="preview"></div>
+          <label class="confirmation"><input id="confirm" type="checkbox" required> 我确认内容为自己整理的摘要与解法，来源链接正确，并同意通过 Pull Request 接受审核。</label>
+          <button id="submit" type="submit" class="primary-button">创建 Pull Request <span>→</span></button>
+          <div id="submit-message" class="message hidden"></div>
+        </section>
+
+        <div class="form-nav"><button id="previous" type="button" class="secondary-button hidden">← 上一步</button><div class="autosave">草稿已保存在此浏览器 <button id="clear-draft" type="button" class="text-button">清除草稿</button></div><button id="next" type="button" class="primary-button">下一步 →</button></div>
+      </form>
+    </section>
+  </main>
+  <footer>ALGO INDEX · 题目录入台 · C++20</footer>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

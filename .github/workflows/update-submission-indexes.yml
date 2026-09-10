@@ -1,0 +1,45 @@
+name: Update indexes for website submissions
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.event.pull_request.head.ref, 'submission/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout submitted branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          path: submission
+          fetch-depth: 0
+
+      - name: Checkout trusted manager from main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: trusted
+
+      - name: Regenerate indexes and website data
+        env:
+          PROBLEM_BANK_ROOT: ${{ github.workspace }}/submission
+        run: python trusted/problem_bank.py index
+
+      - name: Commit generated files when changed
+        working-directory: submission
+        run: |
+          if git diff --quiet -- INDEX.md indexes dist/data.json; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add INDEX.md indexes dist/data.json
+          git commit -m "更新题库索引"
+          git push
