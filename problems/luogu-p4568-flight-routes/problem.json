@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "slug": "luogu-p4568-flight-routes",
+  "title": "[JLOI2011] 飞行路线",
+  "problem_id": "P4568",
+  "url": "https://www.luogu.com.cn/problem/P4568",
+  "source": {
+    "id": "luogu",
+    "name": "洛谷"
+  },
+  "difficulty": {
+    "unified": "困难",
+    "original": "提高+/省选−"
+  },
+  "primary_topic": "graph_theory.shortest_path",
+  "topics": [
+    "graph_theory.shortest_path",
+    "data_structures.heap"
+  ],
+  "status": "已解决",
+  "cpp_standard": "C++20",
+  "time_limit_seconds": 2,
+  "created_at": "2026-09-11"
+}

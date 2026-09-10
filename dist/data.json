@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_on": "—",
+  "generated_on": "2026-09-11",
   "difficulties": [
     "入门",
     "简单",
@@ -374,5 +374,30 @@
       ]
     }
   ],
-  "problems": []
+  "problems": [
+    {
+      "directory": "luogu-p4568-flight-routes",
+      "title": "[JLOI2011] 飞行路线",
+      "problem_id": "P4568",
+      "url": "https://www.luogu.com.cn/problem/P4568",
+      "source": {
+        "id": "luogu",
+        "name": "洛谷"
+      },
+      "difficulty": {
+        "unified": "困难",
+        "original": "提高+/省选−"
+      },
+      "primary_topic": "graph_theory.shortest_path",
+      "topics": [
+        "graph_theory.shortest_path",
+        "data_structures.heap"
+      ],
+      "status": "已解决",
+      "cpp_standard": "C++20",
+      "time_limit_seconds": 2,
+      "notes": "## 题目描述\n\n给定一张有 `n` 个城市、`m` 条双向航线的带权图。旅客需要从城市 `s` 到达城市 `t`，途中至多可以选择 `k` 条航线免费乘坐，求最少总花费。\n\n## 输入格式\n\n第一行输入 `n m k`，分别表示城市数、航线数和最多免费乘坐次数。\n\n第二行输入 `s t`，表示起点和终点。\n\n接下来 `m` 行，每行输入 `a b c`，表示城市 `a` 与 `b` 之间有一条票价为 `c` 的双向航线。\n\n## 输出格式\n\n输出从 `s` 到 `t` 的最少花费。\n\n## 解题思路\n\n把“已经使用了多少次免费机会”加入最短路状态。令 `dist[u][used]` 表示到达城市 `u`、恰好使用 `used` 次免费机会时的最小花费，其中 `0 <= used <= k`。\n\n从状态 `(u, used)` 经过一条权值为 `w`、终点为 `v` 的航线时有两种选择：\n\n1. 正常付费，转移到 `(v, used)`，新增花费 `w`；\n2. 当 `used < k` 时免费乘坐，转移到 `(v, used + 1)`，新增花费 `0`。\n\n这等价于在一个有 `k + 1` 层的分层图上求最短路。所有边权都非负，因此使用优先队列优化的 Dijkstra 算法。最终答案是 `dist[t][0..k]` 中的最小值。\n\n## 正确性证明\n\n任意一条合法旅行路线，都可以按照每条航线是否使用免费机会，唯一对应为分层图中的一条路径：付费时留在同一层，免费时进入下一层。该路径的权值恰好等于旅行的实际花费，并且层数不会超过 `k`。\n\n反过来，分层图中从 `(s, 0)` 到任意 `(t, used)`（`used <= k`）的路径，也对应原图中的一条合法路线；跨层边代表免费乘坐，同层边代表正常付费，所以实际花费等于路径权值。\n\n因此，合法方案与分层图中的目标路径保持相同花费。Dijkstra 能正确求出非负权分层图中的最短距离，取所有终点层的最小值便得到至多使用 `k` 次免费机会时的最小花费。\n\n## 易错点与复盘\n\n- 城市编号范围是 `0` 到 `n - 1`。\n- 只有在 `used < k` 时才能转移到下一层，否则会越界并错误地使用更多免费机会。\n- 答案要在终点的所有层中取最小值，因为免费机会不要求全部用完。\n- 最短距离可能超过 `int` 范围，使用 `long long`。\n- 优先队列需要按距离从小到大弹出状态。\n\n## 复杂度\n\n- 时间复杂度：`O((n k + m k) log(n k))`\n- 空间复杂度：`O(n k + m)`\n\n## 测试说明\n\n- `sample1`：洛谷公开样例，一次免费机会应当用于降低最优路线的总费用。\n- `sample2`：`k = 0`，退化为普通最短路。\n- `sample3`：免费机会少于路径边数，并且不必全部边都付费。",
+      "solution": "#include <bits/stdc++.h>\nusing namespace std;\n\n#define ull unsigned long long\n#define ll long long\n#define edl '\\n'\n\nconst int N = 1e5 + 10;\nconst ll INF = 1e18;\n\nll n, m, k;\nll s, t;\n\nvector<pair<ll, ll>> g[N];\n\nstruct QWQ {\n    ll x, w, used;\n\n    bool operator<(const QWQ& other) const {\n        if (w != other.w) return w > other.w;\n        return used > other.used;\n    }\n};\n\nll ck[N][20];\nll dp[N][20];\n\nvoid solve() {\n    cin >> n >> m >> k;\n    cin >> s >> t;\n    for (int i = 1; i <= m; i++) {\n        ll u, v, w;\n        cin >> u >> v >> w;\n        g[u].push_back({v, w});\n        g[v].push_back({u, w});\n    }\n\n    for (int i = 0; i < n; i++) {\n        for (int j = 0; j <= k; j++) {\n            dp[i][j] = INF;\n        }\n    }\n\n    priority_queue<QWQ> q;\n    q.push({s, 0, 0});\n    dp[s][0] = 0;\n\n    while (!q.empty()) {\n        auto [x, w, used] = q.top();\n        q.pop();\n        if (ck[x][used]) continue;\n        ck[x][used] = 1;\n\n        for (auto [u, v] : g[x]) {\n            if (used < k && dp[u][used + 1] > w) {\n                dp[u][used + 1] = w;\n                q.push({u, w, used + 1});\n            }\n            if (dp[u][used] > w + v) {\n                dp[u][used] = w + v;\n                q.push({u, w + v, used});\n            }\n        }\n    }\n\n    ll ans = INF;\n    for (int i = 0; i <= k; i++) ans = min(ans, dp[t][i]);\n    cout << ans << edl;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n\n    int test_cases = 1;\n    while (test_cases--) solve();\n    return 0;\n}\n"
+    }
+  ]
 }
