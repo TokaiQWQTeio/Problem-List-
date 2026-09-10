@@ -188,7 +188,7 @@ function openProblem(directory) {
   if (externalUrl) meta.push(`<a href="${escapeHtml(externalUrl)}" target="_blank" rel="noreferrer">打开原题 ↗</a>`);
   document.querySelector("#dialogMeta").innerHTML = meta.join("");
   document.querySelector("#notesPanel").innerHTML = problem.notes
-    ? `<div class="notes-content">${escapeHtml(problem.notes)}</div>`
+    ? `<div class="notes-content">${renderMarkdown(problem.notes)}</div>`
     : `<p class="notes-placeholder">这道题还没有填写题解笔记。</p>`;
   document.querySelector("#solutionCode").textContent = problem.solution || "// 暂无代码";
   showPanel("notes");
