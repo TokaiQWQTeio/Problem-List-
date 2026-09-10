@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="以算法知识点为主线，可按难度、来源和状态筛选的 C++20 编程题库。"
+    />
+    <title>Algo Index · C++ 编程题库</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="返回题库首页">
+        <span class="brand-mark" aria-hidden="true">A/</span>
+        <span>ALGO INDEX</span>
+      </a>
+      <div class="topbar-meta">
+        <span class="language-chip">C++20</span>
+        <span id="generatedOn">数据加载中</span>
+      </div>
+    </header>
+
+    <div class="shell">
+      <aside class="sidebar" aria-label="算法知识点分类">
+        <div class="sidebar-heading">
+          <span>知识点</span>
+          <span id="topicCount" class="muted">—</span>
+        </div>
+        <nav id="categoryNav" class="category-nav"></nav>
+      </aside>
+
+      <main class="workspace">
+        <section class="workspace-head" aria-labelledby="pageTitle">
+          <div>
+            <p class="eyebrow">PROBLEM WORKSPACE</p>
+            <h1 id="pageTitle">编程题库</h1>
+          </div>
+          <div id="stats" class="stats" aria-label="题库统计"></div>
+        </section>
+
+        <section class="controls" aria-label="题目筛选">
+          <label class="search-field">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <span class="sr-only">搜索题目</span>
+            <input
+              id="searchInput"
+              type="search"
+              placeholder="搜索题名、题号、来源或知识点…"
+              autocomplete="off"
+            />
+            <kbd>/</kbd>
+          </label>
+          <div class="select-row">
+            <label>
+              <span class="sr-only">统一难度</span>
+              <select id="difficultyFilter"><option value="">全部难度</option></select>
+            </label>
+            <label>
+              <span class="sr-only">题目来源</span>
+              <select id="sourceFilter"><option value="">全部来源</option></select>
+            </label>
+            <label>
+              <span class="sr-only">学习状态</span>
+              <select id="statusFilter"><option value="">全部状态</option></select>
+            </label>
+            <button id="resetFilters" class="ghost-button" type="button">清除筛选</button>
+          </div>
+        </section>
+
+        <div class="result-bar">
+          <p id="resultSummary" aria-live="polite">正在读取题库…</p>
+          <button id="mobileTopics" class="mobile-topics" type="button">选择知识点</button>
+        </div>
+
+        <section id="problemGrid" class="problem-grid" aria-label="题目列表"></section>
+        <section id="emptyState" class="empty-state" hidden>
+          <div class="empty-glyph" aria-hidden="true">{ }</div>
+          <h2 id="emptyTitle">题库还是空的</h2>
+          <p id="emptyText">运行 <code>python problem_bank.py add</code> 添加第一道题，网站数据会随索引自动更新。</p>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="problemDialog" class="problem-dialog">
+      <article>
+        <header class="dialog-head">
+          <div>
+            <p id="dialogKicker" class="eyebrow"></p>
+            <h2 id="dialogTitle"></h2>
+          </div>
+          <button id="closeDialog" class="icon-button" type="button" aria-label="关闭详情">×</button>
+        </header>
+        <div id="dialogMeta" class="dialog-meta"></div>
+        <div class="detail-tabs" role="tablist" aria-label="题目详情">
+          <button class="detail-tab active" data-panel="notes" type="button" role="tab">题解笔记</button>
+          <button class="detail-tab" data-panel="code" type="button" role="tab">C++ 代码</button>
+        </div>
+        <section id="notesPanel" class="detail-panel"></section>
+        <section id="codePanel" class="detail-panel" hidden>
+          <div class="code-head"><span>solution.cpp</span><button id="copyCode" type="button">复制代码</button></div>
+          <pre><code id="solutionCode"></code></pre>
+        </section>
+      </article>
+    </dialog>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>

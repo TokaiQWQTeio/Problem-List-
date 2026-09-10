@@ -595,6 +595,45 @@ def build_indexes() -> dict[Path, str]:
         stats.extend(f"| {markdown_text(name)} | {count} |" for name, count in values)
         stats.append("")
     files[INDEXES_DIR / "statistics.md"] = "\n".join(stats).rstrip() + "\n"
+
+    site_problems: list[dict[str, Any]] = []
+    for problem in sorted(problems, key=lambda p: p["_dir"].name.casefold()):
+        readme_path = problem["_dir"] / "README.md"
+        notes = readme_path.read_text(encoding="utf-8") if readme_path.exists() else ""
+        if META_END in notes:
+            notes = notes.split(META_END, 1)[1].strip()
+        notes = re.sub(r"<!--.*?-->", "", notes, flags=re.DOTALL).strip()
+        solution_path = problem["_dir"] / "solution.cpp"
+        site_problems.append(
+            {
+                "directory": problem["_dir"].name,
+                "title": problem["title"],
+                "problem_id": problem["problem_id"],
+                "url": problem.get("url", ""),
+                "source": problem["source"],
+                "difficulty": problem["difficulty"],
+                "primary_topic": problem["primary_topic"],
+                "topics": problem["topics"],
+                "status": problem["status"],
+                "cpp_standard": problem.get("cpp_standard", "C++20"),
+                "time_limit_seconds": problem.get("time_limit_seconds", 2),
+                "notes": notes,
+                "solution": solution_path.read_text(encoding="utf-8")
+                if solution_path.exists()
+                else "",
+            }
+        )
+    site_data = {
+        "schema_version": 1,
+        "generated_on": date.today().isoformat(),
+        "difficulties": DIFFICULTIES,
+        "statuses": STATUSES,
+        "categories": categories,
+        "problems": site_problems,
+    }
+    files[ROOT / "dist" / "data.json"] = (
+        json.dumps(site_data, ensure_ascii=False, indent=2) + "\n"
+    )
     return files
 
 

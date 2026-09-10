@@ -21,6 +21,7 @@ Windows 如果没有 `python` 命令，可以使用 `py problem_bank.py ...`。
 - [题库总索引](INDEX.md)
 - [使用与维护指南](docs/GUIDE.md)
 - [算法分类配置](config/taxonomy.json)
+- [题库网站](dist/index.html)
 
 ## 设计原则
 
@@ -30,3 +31,4 @@ Windows 如果没有 `python` 命令，可以使用 `py problem_bank.py ...`。
 - 一道题可以属于多个知识点，但必须指定一个主要知识点。
 - 统一难度固定为：入门、简单、中等、困难、极难。
 - 状态固定为：待做、尝试中、已解决、需复习。
+- 网站数据也由 `python problem_bank.py index` 同步生成。

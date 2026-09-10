@@ -18,5 +18,9 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Check generated indexes
         run: python problem_bank.py index --check
+      - name: Validate website assets
+        run: |
+          node --check dist/app.js
+          python -m json.tool dist/data.json > /dev/null
       - name: Compile and test solved problems
         run: python problem_bank.py test --all-solved
