@@ -1,0 +1,22 @@
+name: Validate problem bank
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate structure and metadata
+        run: python problem_bank.py validate
+      - name: Run manager unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Check generated indexes
+        run: python problem_bank.py index --check
+      - name: Compile and test solved problems
+        run: python problem_bank.py test --all-solved

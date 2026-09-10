@@ -1,0 +1,153 @@
+{
+  "categories": [
+    {
+      "id": "fundamentals",
+      "name": "基础算法",
+      "topics": [
+        {"id": "fundamentals.simulation", "name": "模拟"},
+        {"id": "fundamentals.enumeration", "name": "枚举"},
+        {"id": "fundamentals.sorting", "name": "排序"},
+        {"id": "fundamentals.binary_search", "name": "二分"},
+        {"id": "fundamentals.two_pointers", "name": "双指针"},
+        {"id": "fundamentals.prefix_sum", "name": "前缀和与差分"},
+        {"id": "fundamentals.divide_conquer", "name": "分治"},
+        {"id": "fundamentals.bitwise", "name": "位运算"},
+        {"id": "fundamentals.coordinate_compression", "name": "离散化"}
+      ]
+    },
+    {
+      "id": "data_structures",
+      "name": "数据结构",
+      "topics": [
+        {"id": "data_structures.stack", "name": "栈"},
+        {"id": "data_structures.queue", "name": "队列与双端队列"},
+        {"id": "data_structures.linked_list", "name": "链表"},
+        {"id": "data_structures.heap", "name": "堆与优先队列"},
+        {"id": "data_structures.hash", "name": "哈希表"},
+        {"id": "data_structures.disjoint_set", "name": "并查集"},
+        {"id": "data_structures.fenwick_tree", "name": "树状数组"},
+        {"id": "data_structures.segment_tree", "name": "线段树"},
+        {"id": "data_structures.sparse_table", "name": "ST 表"},
+        {"id": "data_structures.balanced_tree", "name": "平衡树"},
+        {"id": "data_structures.trie", "name": "Trie"},
+        {"id": "data_structures.persistent", "name": "可持久化数据结构"}
+      ]
+    },
+    {
+      "id": "search",
+      "name": "搜索",
+      "topics": [
+        {"id": "search.dfs", "name": "深度优先搜索"},
+        {"id": "search.bfs", "name": "广度优先搜索"},
+        {"id": "search.backtracking", "name": "回溯"},
+        {"id": "search.pruning", "name": "剪枝"},
+        {"id": "search.bidirectional", "name": "双向搜索"},
+        {"id": "search.iterative_deepening", "name": "迭代加深"},
+        {"id": "search.heuristic", "name": "启发式搜索"}
+      ]
+    },
+    {
+      "id": "dynamic_programming",
+      "name": "动态规划",
+      "topics": [
+        {"id": "dynamic_programming.linear", "name": "线性 DP"},
+        {"id": "dynamic_programming.knapsack", "name": "背包 DP"},
+        {"id": "dynamic_programming.interval", "name": "区间 DP"},
+        {"id": "dynamic_programming.tree", "name": "树形 DP"},
+        {"id": "dynamic_programming.digit", "name": "数位 DP"},
+        {"id": "dynamic_programming.state_compression", "name": "状压 DP"},
+        {"id": "dynamic_programming.probability", "name": "概率与期望 DP"},
+        {"id": "dynamic_programming.optimization", "name": "DP 优化"}
+      ]
+    },
+    {
+      "id": "greedy",
+      "name": "贪心",
+      "topics": [
+        {"id": "greedy.basic", "name": "基础贪心"},
+        {"id": "greedy.interval", "name": "区间贪心"},
+        {"id": "greedy.scheduling", "name": "调度问题"}
+      ]
+    },
+    {
+      "id": "graph_theory",
+      "name": "图论",
+      "topics": [
+        {"id": "graph_theory.traversal", "name": "图遍历"},
+        {"id": "graph_theory.topological_sort", "name": "拓扑排序"},
+        {"id": "graph_theory.shortest_path", "name": "最短路"},
+        {"id": "graph_theory.minimum_spanning_tree", "name": "最小生成树"},
+        {"id": "graph_theory.connectivity", "name": "连通性"},
+        {"id": "graph_theory.bipartite", "name": "二分图"},
+        {"id": "graph_theory.matching", "name": "图匹配"},
+        {"id": "graph_theory.network_flow", "name": "网络流"},
+        {"id": "graph_theory.euler", "name": "欧拉路径"},
+        {"id": "graph_theory.lca", "name": "最近公共祖先"},
+        {"id": "graph_theory.tree", "name": "树上问题"}
+      ]
+    },
+    {
+      "id": "mathematics",
+      "name": "数学",
+      "topics": [
+        {"id": "mathematics.number_theory", "name": "数论"},
+        {"id": "mathematics.combinatorics", "name": "组合数学"},
+        {"id": "mathematics.linear_algebra", "name": "线性代数"},
+        {"id": "mathematics.probability", "name": "概率统计"},
+        {"id": "mathematics.game_theory", "name": "博弈论"},
+        {"id": "mathematics.numerical", "name": "数值算法"},
+        {"id": "mathematics.polynomial", "name": "多项式"}
+      ]
+    },
+    {
+      "id": "strings",
+      "name": "字符串",
+      "topics": [
+        {"id": "strings.matching", "name": "字符串匹配"},
+        {"id": "strings.hash", "name": "字符串哈希"},
+        {"id": "strings.aho_corasick", "name": "AC 自动机"},
+        {"id": "strings.suffix", "name": "后缀结构"},
+        {"id": "strings.palindrome", "name": "回文算法"}
+      ]
+    },
+    {
+      "id": "computational_geometry",
+      "name": "计算几何",
+      "topics": [
+        {"id": "computational_geometry.basic", "name": "点线面基础"},
+        {"id": "computational_geometry.convex_hull", "name": "凸包"},
+        {"id": "computational_geometry.sweep_line", "name": "扫描线"},
+        {"id": "computational_geometry.rotating_calipers", "name": "旋转卡壳"}
+      ]
+    },
+    {
+      "id": "constructive",
+      "name": "构造",
+      "topics": [
+        {"id": "constructive.basic", "name": "构造算法"}
+      ]
+    },
+    {
+      "id": "randomized",
+      "name": "随机化",
+      "topics": [
+        {"id": "randomized.basic", "name": "随机化算法"}
+      ]
+    },
+    {
+      "id": "interactive",
+      "name": "交互题",
+      "topics": [
+        {"id": "interactive.basic", "name": "交互算法"}
+      ]
+    },
+    {
+      "id": "other",
+      "name": "其他",
+      "topics": [
+        {"id": "other.uncategorized", "name": "待分类"}
+      ]
+    }
+  ]
+}
+
