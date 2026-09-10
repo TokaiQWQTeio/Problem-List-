@@ -16,9 +16,13 @@ const assets = {
 
 let worker = read(path.join(source, "worker-template.js"));
 worker = worker
-  .replace("__TAXONOMY_JSON__", JSON.stringify(taxonomy))
-  .replace("__SUBMITTERS_JSON__", JSON.stringify(submitters))
-  .replace("__ASSETS_JSON__", JSON.stringify(assets));
+  .replace("__TAXONOMY_JSON__", () => JSON.stringify(taxonomy))
+  .replace("__SUBMITTERS_JSON__", () => JSON.stringify(submitters))
+  .replace("__ASSETS_JSON__", () => JSON.stringify(assets));
+
+if (!worker.includes('const $$ = (selector, root = document)')) {
+  throw new Error("Frontend asset substitution corrupted dollar signs");
+}
 
 fs.mkdirSync(output, { recursive: true });
 fs.writeFileSync(path.join(output, "index.js"), worker);
