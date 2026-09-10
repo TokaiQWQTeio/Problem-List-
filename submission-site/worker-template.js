@@ -18,7 +18,7 @@ function json(data, status = 200, headers = {}) {
 
 function asset(name, type) {
   return new Response(ASSETS[name], {
-    headers: { "content-type": `${type}; charset=utf-8`, "cache-control": "public, max-age=300" },
+    headers: { "content-type": `${type}; charset=utf-8`, "cache-control": "no-cache" },
   });
 }
 
