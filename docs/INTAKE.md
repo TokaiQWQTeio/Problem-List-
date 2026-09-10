@@ -5,8 +5,8 @@
 ## 网站地址
 
 - 公开题库：<https://tokaiqwqteio.github.io/Problem-List-/>
-- 题目录入台：<https://algo-index-intake.crafty-chub-7591.chatgpt.site/>
-- OAuth 回调：<https://algo-index-intake.crafty-chub-7591.chatgpt.site/auth/callback>
+- 题目录入台：<https://problem-list-intake.acmtokaiteio.chatgpt.site/>
+- OAuth 回调：<https://problem-list-intake.acmtokaiteio.chatgpt.site/auth/callback>
 
 ## 首次配置 GitHub OAuth
 

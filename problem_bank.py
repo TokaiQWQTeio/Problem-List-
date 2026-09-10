@@ -623,9 +623,12 @@ def build_indexes() -> dict[Path, str]:
                 else "",
             }
         )
+    latest_problem_date = max(
+        (str(problem.get("created_at", "")) for problem in problems), default=""
+    )
     site_data = {
         "schema_version": 1,
-        "generated_on": date.today().isoformat(),
+        "generated_on": latest_problem_date or "—",
         "difficulties": DIFFICULTIES,
         "statuses": STATUSES,
         "categories": categories,
