@@ -6,6 +6,7 @@
   <meta name="description" content="ALGO INDEX 题目录入台，通过 GitHub 登录并创建题目 Pull Request。">
   <title>题目录入台 · ALGO INDEX</title>
   <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/theme.css?build=20260914-1">
 </head>
 <body>
   <div class="noise"></div>
@@ -18,12 +19,15 @@
     <section id="loading" class="panel centered"><div class="spinner"></div><p>正在确认登录状态…</p></section>
 
     <section id="login" class="hero hidden">
+      <img class="login-art" src="https://images.microcms-assets.io/assets/973fc097984b400db8729642ddff5938/6bcecd8749a74a26a91c8882866d803f/tokaiteio_01.png" alt="东海帝皇官方角色立绘" referrerpolicy="no-referrer">
+      <div class="hero-copy">
       <p class="eyebrow">PROBLEM INTAKE CONSOLE</p>
       <h1>把一道好题，<br><em>稳稳放进题库。</em></h1>
       <p class="lead">使用获准的 GitHub 账号登录。提交后系统会创建 Pull Request，经人工审核后才会进入题库。</p>
       <a id="github-login" class="primary-button github" href="/auth/github">使用 GitHub 登录 <span>→</span></a>
       <p id="login-message" class="message hidden"></p>
       <div class="trust-row"><span>7 天登录会话</span><span>不会执行代码</span><span>人工审核合并</span></div>
+      </div>
     </section>
 
     <section id="workspace" class="workspace hidden">
@@ -33,7 +37,8 @@
       </div>
 
       <section id="ai-intake" class="ai-intake" aria-labelledby="ai-title">
-        <div class="ai-heading"><div><p class="eyebrow">AI QUICK ENTRY</p><h2 id="ai-title">洛谷题目快速录入</h2><p>填写题号、统一难度、简要思路和原始代码，生成可修改的题目草稿。</p></div><span class="ai-badge">人工确认后提交</span></div>
+        <div class="ai-heading"><div><p class="eyebrow">TEIO'S STARTING GATE · AI QUICK ENTRY</p><h2 id="ai-title">让帝皇陪你录入下一道题</h2><p>题号、统一难度、解题思路与 AC 代码。生成后，所有字段都能在同一页核对修改。</p></div><span class="ai-badge">人工确认后提交</span></div>
+        <img class="intake-art" src="https://images.microcms-assets.io/assets/973fc097984b400db8729642ddff5938/22d0e81b38644f22bbe1714c3125ff23/tokaiteio_02.png" alt="东海帝皇比赛服官方角色立绘" referrerpolicy="no-referrer">
         <div class="grid two">
           <label>洛谷题号<input id="ai-problem-id" maxlength="8" placeholder="例如：P4568" autocomplete="off"></label>
           <label>题库统一难度<select id="ai-difficulty"><option>入门</option><option>简单</option><option selected>中等</option><option>困难</option><option>极难</option></select></label>
@@ -43,14 +48,15 @@
         <label class="ai-wide">简要题解思路<textarea id="ai-idea" rows="4" placeholder="写下你的解法核心步骤；AI 会整理成完整的待审核题解。"></textarea></label>
         <label class="ai-wide">你的 AC 代码（C++20）<textarea id="ai-code" class="code" rows="12" spellcheck="false" placeholder="#include &lt;bits/stdc++.h&gt;"></textarea><small>代码会原样带入正式表单，AI 不会改写它。</small></label>
         <div id="ai-manual" class="ai-manual hidden"><p>洛谷暂时无法自动读取，请手动补充题面与一组样例。</p><label>题面<textarea id="ai-manual-statement" rows="5"></textarea></label><div class="grid two"><label>样例输入<textarea id="ai-manual-input" rows="4"></textarea></label><label>样例输出<textarea id="ai-manual-output" rows="4"></textarea></label></div></div>
-        <div class="ai-actions"><button id="ai-generate" type="button" class="primary-button">生成可编辑草稿 →</button><span id="ai-usage-note">输出截断时会自动重试一次，可能产生额外模型费用；生成后请核对草稿。</span></div>
+        <div class="ai-actions"><button id="ai-generate" type="button" class="primary-button">生成可编辑草稿 →</button><button id="manual-entry" type="button" class="secondary-button">直接手动录题</button><span id="ai-usage-note">输出截断时会自动重试一次，可能产生额外模型费用；生成后请核对草稿。</span></div>
         <div id="ai-message" class="message hidden" role="status" aria-live="polite"></div>
         <div id="ai-suggestions" class="ai-suggestions hidden"></div>
       </section>
 
-      <nav id="steps" class="steps" aria-label="录入步骤"></nav>
-      <form id="problem-form" novalidate>
-        <section class="form-step" data-step="0">
+      <nav id="steps" class="steps hidden" aria-label="录入步骤"></nav>
+      <nav id="section-links" class="section-links hidden" aria-label="跳转到表单区域"><a href="#entry-basic">基本信息</a><a href="#entry-classification">分类难度</a><a href="#entry-editorial">题解内容</a><a href="#entry-code">C++20</a><a href="#entry-tests">测试数据</a><a href="#entry-review">预览提交</a><button id="toggle-ai-intake" type="button">展开 AI 录题</button></nav>
+      <form id="problem-form" class="hidden" novalidate>
+        <section id="entry-basic" class="form-step" data-step="0">
           <div class="section-title"><span>01</span><div><h2>基本信息</h2><p>确定题目的身份与原始出处。</p></div></div>
           <div class="grid two">
             <label>题目名称<input name="title" maxlength="200" required placeholder="例如：两数之和"></label>
@@ -62,7 +68,7 @@
           </div>
         </section>
 
-        <section class="form-step hidden" data-step="1">
+        <section id="entry-classification" class="form-step" data-step="1">
           <div class="section-title"><span>02</span><div><h2>分类与进度</h2><p>先按算法知识点，再记录难度、状态与运行限制。</p></div></div>
           <div class="grid two">
             <label>统一难度<select name="difficulty_unified" required><option>入门</option><option>简单</option><option selected>中等</option><option>困难</option><option>极难</option></select></label>
@@ -74,7 +80,7 @@
           <label>主要知识点<select id="primary-topic" name="primary_topic" required><option value="">请先选择知识点</option></select></label>
         </section>
 
-        <section class="form-step hidden" data-step="2">
+        <section id="entry-editorial" class="form-step" data-step="2">
           <div class="section-title"><span>03</span><div><h2>题解内容</h2><p>保存原创摘要、分析与复盘；不复制完整题面。</p></div></div>
           <div class="stack">
             <label>原创题目摘要<textarea name="summary" required rows="5" placeholder="用自己的话概括问题、目标与关键约束。"></textarea></label>
@@ -88,7 +94,7 @@
           </div>
         </section>
 
-        <section class="form-step hidden" data-step="3">
+        <section id="entry-code" class="form-step" data-step="3">
           <div class="section-title"><span>04</span><div><h2>C++20 代码</h2><p>最多 200KB。这里只保存文本，服务器不会编译或运行。</p></div></div>
           <label><span class="sr-only">C++20 代码</span><textarea id="code" class="code" name="code" required spellcheck="false" rows="24">#include &lt;bits/stdc++.h&gt;
 using namespace std;
@@ -103,13 +109,13 @@ int main() {
           <p id="code-size" class="counter"></p>
         </section>
 
-        <section class="form-step hidden" data-step="4">
+        <section id="entry-tests" class="form-step" data-step="4">
           <div class="section-title"><span>05</span><div><h2>测试数据</h2><p>添加 1–20 组输入输出，每个文件不超过 1MB。</p></div></div>
           <div id="tests" class="tests"></div>
           <button id="add-test" type="button" class="secondary-button">＋ 添加一组测试</button>
         </section>
 
-        <section class="form-step hidden" data-step="5">
+        <section id="entry-review" class="form-step" data-step="5">
           <div class="section-title"><span>06</span><div><h2>预览并提交</h2><p>确认后会创建独立分支和 Pull Request，不会自动合并。</p></div></div>
           <div id="preview" class="preview"></div>
           <label id="change-summary-row" class="hidden">修改说明<textarea name="change_summary" maxlength="1000" rows="3" placeholder="例如：修正解题思路，并补充边界测试。"></textarea><small>编辑题目时必填，将写入 Pull Request 标题和说明。</small></label>
@@ -118,11 +124,11 @@ int main() {
           <div id="submit-message" class="message hidden"></div>
         </section>
 
-        <div class="form-nav"><button id="previous" type="button" class="secondary-button hidden">← 上一步</button><div class="autosave">草稿已保存在此浏览器 <button id="clear-draft" type="button" class="text-button">清除草稿</button></div><button id="next" type="button" class="primary-button">下一步 →</button></div>
+        <div class="form-nav"><button id="previous" type="button" class="secondary-button hidden">← 上一步</button><div class="autosave">草稿已保存在此浏览器 <button id="clear-draft" type="button" class="text-button">清除草稿</button></div><button id="next" type="button" class="primary-button hidden">下一步 →</button></div>
       </form>
     </section>
   </main>
-  <footer>ALGO INDEX · 题目录入台 · C++20</footer>
-  <script type="module" src="/app.js?build=20260914-2"></script>
+  <footer>TEIO ALGO INDEX · C++20 · <a href="https://umamusume.jp/character/tokaiteio" target="_blank" rel="noopener noreferrer">角色立绘 © Cygames, Inc.</a> · 非官方个人题库</footer>
+  <script type="module" src="/app.js?build=20260914-3"></script>
 </body>
 </html>

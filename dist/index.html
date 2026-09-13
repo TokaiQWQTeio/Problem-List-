@@ -7,14 +7,14 @@
       name="description"
       content="以算法知识点为主线，可按难度、来源和状态筛选的 C++20 编程题库。"
     />
-    <title>Algo Index · C++ 编程题库</title>
-    <link rel="stylesheet" href="styles.css?v=2" />
+    <title>Teio Algo Index · C++ 编程题库</title>
+    <link rel="stylesheet" href="styles.css?v=3" />
   </head>
   <body>
     <header class="topbar">
       <a class="brand" href="#" aria-label="返回题库首页">
-        <span class="brand-mark" aria-hidden="true">A/</span>
-        <span>ALGO INDEX</span>
+        <span class="brand-mark" aria-hidden="true">T</span>
+        <span>TEIO ALGO INDEX</span>
       </a>
       <div class="topbar-meta">
         <a class="intake-link" href="https://problem-list-intake.acmtokaiteio.chatgpt.site" target="_blank" rel="noreferrer">提交新题 ↗</a>
@@ -24,31 +24,19 @@
     </header>
 
     <div class="shell">
-      <aside class="sidebar" aria-label="算法知识点分类">
-        <div class="sidebar-heading">
-          <span>知识点</span>
-          <span id="topicCount" class="muted">—</span>
-        </div>
-        <nav id="categoryNav" class="category-nav"></nav>
-      </aside>
-
       <main class="workspace">
-        <section class="workspace-head" aria-labelledby="pageTitle">
-          <div>
-            <p class="eyebrow">PROBLEM WORKSPACE</p>
-            <h1 id="pageTitle">编程题库</h1>
-          </div>
-          <div id="stats" class="stats" aria-label="题库统计"></div>
+        <section class="library-hero" aria-labelledby="pageTitle">
+          <div class="hero-copy"><p class="eyebrow">TOKAI TEIO'S PROBLEM TRACK · C++20</p><h1 id="pageTitle">向着下一题，<br><em>全力奔跑。</em></h1><p>按题名、题号或来源寻找题目；知识点和难度随时可以筛选。</p></div>
+          <img class="hero-art" src="https://images.microcms-assets.io/assets/973fc097984b400db8729642ddff5938/22d0e81b38644f22bbe1714c3125ff23/tokaiteio_02.png" alt="东海帝皇比赛服官方角色立绘" referrerpolicy="no-referrer" />
         </section>
-
-        <section class="controls" aria-label="题目筛选">
+        <section class="controls" aria-label="搜索和题目筛选">
           <label class="search-field">
             <span class="search-icon" aria-hidden="true">⌕</span>
             <span class="sr-only">搜索题目</span>
             <input
               id="searchInput"
               type="search"
-              placeholder="搜索题名、题号、来源或知识点…"
+              placeholder="今天想挑战哪道题？搜索题名、题号或来源…"
               autocomplete="off"
             />
             <kbd>/</kbd>
@@ -67,12 +55,13 @@
               <select id="statusFilter"><option value="">全部状态</option></select>
             </label>
             <button id="resetFilters" class="ghost-button" type="button">清除筛选</button>
+            <button id="mobileTopics" class="mobile-topics" type="button" aria-expanded="false" aria-controls="topicPanel">知识点筛选 <span id="topicCount">—</span></button>
           </div>
         </section>
-
+        <div id="topicPanel" class="topic-panel" hidden><div class="topic-panel-head"><strong>按算法知识点筛选</strong><span>可同时用搜索与其他条件缩小范围</span></div><nav id="categoryNav" class="category-nav" aria-label="算法知识点分类"></nav></div>
         <div class="result-bar">
           <p id="resultSummary" aria-live="polite">正在读取题库…</p>
-          <button id="mobileTopics" class="mobile-topics" type="button">选择知识点</button>
+          <div id="stats" class="stats" aria-label="题库统计"></div>
         </div>
 
         <section id="problemGrid" class="problem-grid" aria-label="题目列表"></section>
@@ -83,6 +72,7 @@
         </section>
       </main>
     </div>
+    <footer class="site-footer">TEIO ALGO INDEX · <a href="https://umamusume.jp/character/tokaiteio" target="_blank" rel="noopener noreferrer">角色立绘 © Cygames, Inc.</a> · 非官方个人题库</footer>
 
     <dialog id="problemDialog" class="problem-dialog">
       <article>
@@ -107,6 +97,6 @@
     </dialog>
 
     <script src="markdown.js?v=1" defer></script>
-    <script src="app.js?v=3" defer></script>
+    <script src="app.js?v=4" defer></script>
   </body>
 </html>

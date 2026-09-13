@@ -22,7 +22,7 @@ const elements = {
   emptyTitle: document.querySelector("#emptyTitle"),
   emptyText: document.querySelector("#emptyText"),
   generated: document.querySelector("#generatedOn"),
-  sidebar: document.querySelector(".sidebar"),
+  topicPanel: document.querySelector("#topicPanel"),
   mobileTopics: document.querySelector("#mobileTopics"),
   dialog: document.querySelector("#problemDialog"),
 };
@@ -202,7 +202,8 @@ function bindEvents() {
     const button = event.target.closest("[data-topic]");
     if (!button) return;
     state.topic = button.dataset.topic;
-    elements.sidebar.classList.remove("open");
+    elements.topicPanel.hidden = true;
+    elements.mobileTopics.setAttribute("aria-expanded", "false");
     render();
   });
   elements.search.addEventListener("input", (event) => { state.search = event.target.value; renderProblems(); });
@@ -219,13 +220,16 @@ function bindEvents() {
       event.preventDefault();
       elements.search.focus();
     }
-    if (event.key === "Escape") elements.sidebar.classList.remove("open");
+    if (event.key === "Escape") { elements.topicPanel.hidden = true; elements.mobileTopics.setAttribute("aria-expanded", "false"); }
   });
   elements.grid.addEventListener("click", (event) => {
     const button = event.target.closest("[data-problem]");
     if (button) openProblem(button.dataset.problem);
   });
-  elements.mobileTopics.addEventListener("click", () => elements.sidebar.classList.toggle("open"));
+  elements.mobileTopics.addEventListener("click", () => {
+    elements.topicPanel.hidden = !elements.topicPanel.hidden;
+    elements.mobileTopics.setAttribute("aria-expanded", String(!elements.topicPanel.hidden));
+  });
   document.querySelector("#closeDialog").addEventListener("click", () => elements.dialog.close());
   elements.dialog.addEventListener("click", (event) => {
     if (event.target === elements.dialog) elements.dialog.close();

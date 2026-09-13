@@ -11,6 +11,7 @@ const submitters = JSON.parse(read(path.join(root, "config", "submitters.json"))
 const assets = {
   "index.html": read(path.join(source, "public", "index.html")),
   "styles.css": read(path.join(source, "public", "styles.css")),
+  "theme.css": read(path.join(source, "public", "theme.css")),
   "app.js": read(path.join(source, "public", "app.js")),
   "settings.html": read(path.join(source, "public", "settings.html")),
   "settings.js": read(path.join(source, "public", "settings.js")),

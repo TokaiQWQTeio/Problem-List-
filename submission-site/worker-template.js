@@ -937,6 +937,7 @@ async function router(request, env) {
   const url = new URL(request.url);
   if (request.method === "GET" && url.pathname === "/") return asset("index.html", "text/html");
   if (request.method === "GET" && url.pathname === "/styles.css") return asset("styles.css", "text/css");
+  if (request.method === "GET" && url.pathname === "/theme.css") return asset("theme.css", "text/css");
   if (request.method === "GET" && url.pathname === "/app.js") return asset("app.js", "text/javascript");
   if (request.method === "GET" && url.pathname === "/settings") {
     const session = await currentSession(request, env);

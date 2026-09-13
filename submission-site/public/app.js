@@ -3,6 +3,7 @@ const stepNames = ["基本信息", "分类难度", "题解内容", "C++20", "测
 const editDirectory = new URLSearchParams(location.search).get("edit") || "";
 const state = {
   step: 0,
+  reviewMode: Boolean(editDirectory),
   session: null,
   taxonomy: null,
   mode: editDirectory ? "edit" : "create",
@@ -122,6 +123,12 @@ function populateForm(problem) {
 function bindEvents() {
   $("#ai-fetch").addEventListener("click", fetchAiSource);
   $("#ai-generate").addEventListener("click", generateAiEntry);
+  $("#manual-entry").addEventListener("click", () => enterReviewMode());
+  $("#toggle-ai-intake").addEventListener("click", () => {
+    const compact = $("#ai-intake").classList.toggle("compact");
+    $("#toggle-ai-intake").textContent = compact ? "展开 AI 录题" : "收起 AI 录题";
+    if (!compact) $("#ai-intake").scrollIntoView({ behavior: "smooth" });
+  });
   $("#ai-suggestions").addEventListener("click", addSuggestedTest);
   $("#next").addEventListener("click", () => { if (validateStep()) { state.step += 1; updateStep(); } });
   $("#previous").addEventListener("click", () => { state.step -= 1; updateStep(); });
@@ -131,8 +138,8 @@ function bindEvents() {
     const target = Number(button.dataset.target);
     if (target <= state.step || validateStep()) { state.step = target; updateStep(); }
   });
-  form.addEventListener("input", () => { syncTopics(); updateCodeSize(); saveDraft(); });
-  form.addEventListener("change", () => { syncTopics(); saveDraft(); });
+  form.addEventListener("input", () => { syncTopics(); updateCodeSize(); saveDraft(); schedulePreview(); });
+  form.addEventListener("change", () => { syncTopics(); saveDraft(); schedulePreview(); });
   form.addEventListener("submit", submitProblem);
   $("#add-test").addEventListener("click", () => { if (state.tests.length < 20) { state.tests.push({ name: nextTestName(), input: "", output: "" }); renderTests(); saveDraft(); } });
   $("#tests").addEventListener("click", (event) => {
@@ -147,6 +154,8 @@ function bindEvents() {
     if (state.mode === "edit") populateForm(state.original);
     else { form.reset(); state.tests = [{ name: "test01", input: "", output: "" }]; }
     renderTests(); syncTopics(); updateCodeSize();
+    state.reviewMode = state.mode === "edit";
+    updateStep();
   });
   $("#logout").addEventListener("click", async () => { await fetch("/auth/logout", { method: "POST" }); location.reload(); });
 }
@@ -239,10 +248,9 @@ async function generateAiEntry() {
     updateCodeSize();
     state.aiSuggestions = Array.isArray(result.suggested_tests) ? result.suggested_tests : [];
     renderAiSuggestions(result.warnings || []);
-    state.step = 0;
-    updateStep();
+    enterReviewMode();
     saveDraft();
-    aiMessage(`草稿已填入下方表单。请逐步核对后提交；今日还可生成 ${result.remaining} 次。`, "success");
+    aiMessage(`草稿已填入下方表单。请在同一页核对全部内容后提交；今日还可生成 ${result.remaining} 次。`, "success");
   } catch (error) { aiMessage(error.message); }
   finally { button.disabled = !(state.session.ai_models || []).length; button.textContent = "生成可编辑草稿 →"; }
 }
@@ -261,7 +269,7 @@ function addSuggestedTest(event) {
   const test = state.aiSuggestions[Number(button.dataset.aiTest)];
   if (!test?.output || state.tests.length >= 20) return;
   if (!confirm("你已核对这组测试的输入和期望输出，确定加入吗？")) return;
-  if (state.step === 4) readTests();
+  readTests();
   state.tests.push({ name: nextTestName(), input: test.input || "", output: test.output });
   renderTests();
   saveDraft();
@@ -271,15 +279,29 @@ function addSuggestedTest(event) {
 
 function updateStep() {
   state.step = Math.max(0, Math.min(stepNames.length - 1, state.step));
-  $$(".form-step").forEach((element, index) => element.classList.toggle("hidden", index !== state.step));
-  $$(".step").forEach((element, index) => {
-    element.classList.toggle("active", index === state.step);
-    element.classList.toggle("done", index < state.step);
-  });
-  $("#previous").classList.toggle("hidden", state.step === 0);
-  $("#next").classList.toggle("hidden", state.step === stepNames.length - 1);
-  if (state.step === stepNames.length - 1) renderPreview();
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  $("#problem-form").classList.toggle("hidden", !state.reviewMode);
+  $("#section-links").classList.toggle("hidden", !state.reviewMode);
+  $("#toggle-ai-intake").classList.toggle("hidden", state.mode === "edit");
+  $("#workspace").classList.toggle("review-mode", state.reviewMode);
+  $$(".form-step").forEach((element) => element.classList.remove("hidden"));
+  $("#previous").classList.add("hidden");
+  $("#next").classList.add("hidden");
+  if (state.reviewMode) renderPreview();
+}
+
+function enterReviewMode() {
+  state.reviewMode = true;
+  $("#ai-intake").classList.add("compact");
+  $("#toggle-ai-intake").textContent = "展开 AI 录题";
+  updateStep();
+  $("#section-links").scrollIntoView({ behavior: "smooth", block: "start" });
+  saveDraft();
+}
+
+function schedulePreview() {
+  if (!state.reviewMode) return;
+  clearTimeout(schedulePreview.timer);
+  schedulePreview.timer = setTimeout(renderPreview, 400);
 }
 
 function validateStep() {
@@ -297,6 +319,17 @@ function validateStep() {
     readTests();
     if (!state.tests.length) { alert("请至少添加一组测试。"); return false; }
     if (state.tests.some((test) => new TextEncoder().encode(test.input).length > 1_000_000 || new TextEncoder().encode(test.output).length > 1_000_000)) { alert("每个输入或输出文件不能超过 1MB。"); return false; }
+  }
+  return true;
+}
+
+function validateAll() {
+  for (let index = 0; index < stepNames.length; index += 1) {
+    state.step = index;
+    if (!validateStep()) {
+      $(`.form-step[data-step="${index}"]`).scrollIntoView({ behavior: "smooth", block: "start" });
+      return false;
+    }
   }
   return true;
 }
@@ -351,7 +384,7 @@ function saveDraft() {
 
 function saveDraftNow() {
   clearTimeout(saveDraft.timer);
-  localStorage.setItem(draftKey(), JSON.stringify({ fields: formData(), step: state.step }));
+  localStorage.setItem(draftKey(), JSON.stringify({ fields: formData(), step: state.step, reviewMode: state.reviewMode }));
 }
 
 function loadDraft() {
@@ -377,6 +410,8 @@ function loadDraft() {
     ? draft.fields.tests.slice(0, 20).map((test, index) => ({ name: test.name || `test${String(index + 1).padStart(2, "0")}`, input: test.input || "", output: test.output || "" }))
     : state.tests;
   state.step = Math.max(0, Math.min(5, Number(draft.step) || 0));
+  state.reviewMode = state.mode === "edit" || Boolean(draft.reviewMode ?? draft.fields.title?.trim());
+  if (state.reviewMode && state.mode === "create") $("#ai-intake").classList.add("compact");
   updateCodeSize();
 }
 
@@ -478,7 +513,9 @@ function renderLineDiff(beforeValue, afterValue) {
 
 async function submitProblem(event) {
   event.preventDefault();
-  if (!validateStep() || !$("#confirm").checked) { $("#confirm").reportValidity(); return; }
+  if (!validateAll()) return;
+  if (!$("#confirm").checked) { $("#confirm").reportValidity(); return; }
+  renderPreview();
   const button = $("#submit");
   const message = $("#submit-message");
   button.disabled = true; button.firstChild.textContent = "正在创建… ";
@@ -544,7 +581,8 @@ function registerPageTools() {
       const target = stepIds.indexOf(input?.step);
       if (target < 0) throw new Error("未知的录入步骤");
       state.step = target;
-      updateStep();
+      if (!state.reviewMode) enterReviewMode();
+      $(`.form-step[data-step="${target}"]`).scrollIntoView({ behavior: "smooth", block: "start" });
       return { step: input.step, title: stepNames[target] };
     },
   })).catch(() => {});
