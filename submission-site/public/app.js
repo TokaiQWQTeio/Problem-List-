@@ -202,7 +202,7 @@ async function generateAiEntry() {
     if (form.elements.namedItem("title").value.trim() && !confirm("生成结果会覆盖当前手动表单内容。确定继续吗？")) return;
     button.disabled = true;
     button.textContent = "正在生成草稿…";
-    aiMessage("正在分析题目与代码，通常需要几十秒。", "success");
+    aiMessage("正在分析题目与代码；若模型输出被截断，系统会自动重试一次。", "success");
     const response = await fetch("/api/ai/generate", {
       method: "POST",
       headers: { "content-type": "application/json", "x-csrf-token": state.session.csrf },

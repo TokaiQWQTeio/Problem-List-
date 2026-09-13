@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { adminAiRoute, aiCatalogue, availableModels, buildFiles, normalizeLuoguProblem, parseAiJson, resolveAiCredential } from "../dist/server/index.js";
+import { adminAiRoute, aiCatalogue, availableModels, buildFiles, callAiModel, normalizeLuoguProblem, parseAiJson, resolveAiCredential } from "../dist/server/index.js";
 
 const models = availableModels({ AI_OPENAI_API_KEY: "secret", AI_DEEPSEEK_API_KEY: "secret" });
 assert(models.some((model) => model.id === "gpt-5.6-terra"));
@@ -58,6 +58,21 @@ assert.equal(source.output_format, "输出");
 assert.equal(source.time_limit_seconds, 1);
 assert.deepEqual(source.samples, [{ name: "sample1", input: "1 2\n", output: "3\n" }]);
 assert.equal(parseAiJson('```json\n{"title":"题目"}\n```').title, "题目");
+
+const originalFetch = globalThis.fetch;
+const requests = [];
+try {
+  globalThis.fetch = async (_url, options) => {
+    requests.push(JSON.parse(options.body));
+    return new Response(JSON.stringify(requests.length === 1
+      ? { choices: [{ finish_reason: "length", message: { content: "" } }], usage: { completion_tokens: 7000 } }
+      : { choices: [{ finish_reason: "stop", message: { content: '{"title":"重试成功"}' } }] }), { status: 200 });
+  };
+  assert.equal((await callAiModel({ provider: "openai", id: "gpt-5.6-terra" }, "test-key", "完整题面和代码"))?.title, "重试成功");
+  assert.equal(requests.length, 2);
+  assert.deepEqual(requests.map((request) => request.max_completion_tokens), [7000, 12000]);
+  assert(requests.every((request) => request.reasoning_effort === "low" && request.messages[1].content === "完整题面和代码"));
+} finally { globalThis.fetch = originalFetch; }
 
 const exactCode = "int main() {}";
 const files = buildFiles({

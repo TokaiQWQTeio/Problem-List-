@@ -43,7 +43,7 @@
         <label class="ai-wide">简要题解思路<textarea id="ai-idea" rows="4" placeholder="写下你的解法核心步骤；AI 会整理成完整的待审核题解。"></textarea></label>
         <label class="ai-wide">你的 AC 代码（C++20）<textarea id="ai-code" class="code" rows="12" spellcheck="false" placeholder="#include &lt;bits/stdc++.h&gt;"></textarea><small>代码会原样带入正式表单，AI 不会改写它。</small></label>
         <div id="ai-manual" class="ai-manual hidden"><p>洛谷暂时无法自动读取，请手动补充题面与一组样例。</p><label>题面<textarea id="ai-manual-statement" rows="5"></textarea></label><div class="grid two"><label>样例输入<textarea id="ai-manual-input" rows="4"></textarea></label><label>样例输出<textarea id="ai-manual-output" rows="4"></textarea></label></div></div>
-        <div class="ai-actions"><button id="ai-generate" type="button" class="primary-button">生成可编辑草稿 →</button><span id="ai-usage-note">生成后请核对题意、证明、复杂度与测试。</span></div>
+        <div class="ai-actions"><button id="ai-generate" type="button" class="primary-button">生成可编辑草稿 →</button><span id="ai-usage-note">输出截断时会自动重试一次，可能产生额外模型费用；生成后请核对草稿。</span></div>
         <div id="ai-message" class="message hidden" role="status" aria-live="polite"></div>
         <div id="ai-suggestions" class="ai-suggestions hidden"></div>
       </section>
