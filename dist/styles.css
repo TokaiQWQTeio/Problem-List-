@@ -248,3 +248,32 @@ select,.ghost-button { color:var(--text); background:#f5f9fa; }
 .topic-choices .category-button[data-topic]:not(.topic-choice) { color:#0b7793; background:#e9f5f8; }
 .mobile-topics { min-width:150px; }
 #topicCount { font-size:.76rem; opacity:.72; }
+
+/* Persistent knowledge-point rail on wide screens; drawer on narrow screens. */
+.shell { display:grid; grid-template-columns:292px minmax(0,1fr); align-items:start; }
+.workspace { min-width:0; }
+.topic-panel { position:sticky; top:64px; align-self:start; height:calc(100vh - 64px); margin:0; padding:24px 16px; overflow:hidden; border:0; border-right:1px solid var(--line); border-radius:0; box-shadow:none; background:#ffffffea; }
+.topic-panel-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; }
+.topic-panel-head > div { display:grid; gap:4px; }
+.topic-panel-head strong { font-size:1rem; }
+.topic-panel-head span { font-size:.78rem; }
+.topic-panel .category-nav { max-height:calc(100vh - 208px); padding-right:3px; }
+.topic-panel .topic-category { margin:6px 0; padding:0 8px; }
+.topic-panel .topic-category > summary { gap:5px; font-size:.86rem; }
+.topic-panel .category-count { font-size:.65rem; white-space:nowrap; }
+.topic-panel .topic-choices { gap:5px; }
+.topic-panel .category-button { font-size:.76rem; }
+.mobile-topics,.close-topics,.topic-backdrop { display:none; }
+@media(max-width:900px) {
+  .shell { display:block; }
+  .mobile-topics { display:inline-flex; }
+  .topic-panel { position:fixed; z-index:19; top:64px; bottom:0; left:0; width:min(360px,calc(100vw - 36px)); height:auto; padding:20px 16px; border-right:1px solid var(--line); box-shadow:18px 0 45px #0a3b4b33; transform:translateX(-110%); visibility:hidden; transition:transform .2s ease,visibility .2s ease; }
+  .topic-panel.open { transform:translateX(0); visibility:visible; }
+  .topic-panel .category-nav { max-height:calc(100vh - 205px); }
+  .close-topics { display:grid; place-items:center; width:32px; height:32px; border:1px solid var(--line); border-radius:8px; color:var(--text); background:#fff; font-size:1.3rem; cursor:pointer; }
+  .topic-backdrop.open { display:block; position:fixed; z-index:18; inset:64px 0 0; background:#102e3a88; }
+}
+@media(max-width:620px) {
+  .mobile-topics { min-width:0; }
+  .topic-panel { margin:0; }
+}

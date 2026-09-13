@@ -8,7 +8,7 @@
       content="以算法知识点为主线，可按难度、来源和状态筛选的 C++20 编程题库。"
     />
     <title>Teio Algo Index · C++ 编程题库</title>
-    <link rel="stylesheet" href="styles.css?v=4" />
+    <link rel="stylesheet" href="styles.css?v=5" />
   </head>
   <body>
     <header class="topbar">
@@ -24,6 +24,8 @@
     </header>
 
     <div class="shell">
+      <aside id="topicPanel" class="topic-panel" aria-label="算法知识点筛选"><div class="topic-panel-head"><div><strong>知识点筛选</strong><span>选择大类或具体算法</span></div><button id="closeTopics" class="close-topics" type="button" aria-label="关闭知识点筛选">×</button></div><label class="topic-search-field"><span class="sr-only">搜索知识点</span><input id="topicSearchInput" type="search" placeholder="搜索知识点，例如 Dijkstra…" autocomplete="off"></label><nav id="categoryNav" class="category-nav" aria-label="算法知识点分类"></nav></aside>
+      <div id="topicBackdrop" class="topic-backdrop" aria-hidden="true"></div>
       <main class="workspace">
         <section class="library-hero" aria-labelledby="pageTitle">
           <div class="hero-copy"><p class="eyebrow">TOKAI TEIO'S PROBLEM TRACK · C++20</p><h1 id="pageTitle">向着下一题，<br><em>全力奔跑。</em></h1><p>按题名、题号或来源寻找题目；知识点和难度随时可以筛选。</p></div>
@@ -58,7 +60,6 @@
             <button id="mobileTopics" class="mobile-topics" type="button" aria-expanded="false" aria-controls="topicPanel"><span id="activeTopicLabel">知识点筛选</span><span id="topicCount">—</span></button>
           </div>
         </section>
-        <div id="topicPanel" class="topic-panel" hidden><div class="topic-panel-head"><strong>按算法知识点筛选</strong><span>可选大类，也可精确到某个算法</span></div><label class="topic-search-field"><span class="sr-only">搜索知识点</span><input id="topicSearchInput" type="search" placeholder="搜索知识点，例如 Dijkstra、树链剖分…" autocomplete="off"></label><nav id="categoryNav" class="category-nav" aria-label="算法知识点分类"></nav></div>
         <div class="result-bar">
           <p id="resultSummary" aria-live="polite">正在读取题库…</p>
           <div id="stats" class="stats" aria-label="题库统计"></div>
@@ -97,6 +98,6 @@
     </dialog>
 
     <script src="markdown.js?v=1" defer></script>
-    <script src="app.js?v=5" defer></script>
+    <script src="app.js?v=6" defer></script>
   </body>
 </html>

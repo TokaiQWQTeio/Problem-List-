@@ -27,6 +27,8 @@ const elements = {
   emptyText: document.querySelector("#emptyText"),
   generated: document.querySelector("#generatedOn"),
   topicPanel: document.querySelector("#topicPanel"),
+  topicBackdrop: document.querySelector("#topicBackdrop"),
+  closeTopics: document.querySelector("#closeTopics"),
   mobileTopics: document.querySelector("#mobileTopics"),
   dialog: document.querySelector("#problemDialog"),
 };
@@ -204,6 +206,22 @@ function render() {
   renderProblems();
 }
 
+const narrowScreen = matchMedia("(max-width: 900px)");
+
+function syncTopicDrawer() {
+  const open = narrowScreen.matches && elements.topicPanel.classList.contains("open");
+  elements.mobileTopics.setAttribute("aria-expanded", String(open));
+  elements.topicPanel.inert = narrowScreen.matches && !open;
+  elements.topicPanel.setAttribute("aria-hidden", String(narrowScreen.matches && !open));
+  elements.topicBackdrop.classList.toggle("open", open);
+}
+
+function closeTopicDrawer() {
+  if (narrowScreen.matches && elements.topicPanel.contains(document.activeElement)) elements.mobileTopics.focus();
+  elements.topicPanel.classList.remove("open");
+  syncTopicDrawer();
+}
+
 function showPanel(name) {
   document.querySelectorAll(".detail-tab").forEach((button) => {
     button.classList.toggle("active", button.dataset.panel === name);
@@ -242,8 +260,7 @@ function bindEvents() {
     const button = event.target.closest("[data-topic]");
     if (!button) return;
     state.topic = button.dataset.topic;
-    elements.topicPanel.hidden = true;
-    elements.mobileTopics.setAttribute("aria-expanded", "false");
+    closeTopicDrawer();
     render();
   });
   elements.categoryNav.addEventListener("toggle", (event) => {
@@ -266,16 +283,21 @@ function bindEvents() {
       event.preventDefault();
       elements.search.focus();
     }
-    if (event.key === "Escape") { elements.topicPanel.hidden = true; elements.mobileTopics.setAttribute("aria-expanded", "false"); }
+    if (event.key === "Escape" && elements.topicPanel.classList.contains("open")) { closeTopicDrawer(); elements.mobileTopics.focus(); }
   });
   elements.grid.addEventListener("click", (event) => {
     const button = event.target.closest("[data-problem]");
     if (button) openProblem(button.dataset.problem);
   });
   elements.mobileTopics.addEventListener("click", () => {
-    elements.topicPanel.hidden = !elements.topicPanel.hidden;
-    elements.mobileTopics.setAttribute("aria-expanded", String(!elements.topicPanel.hidden));
+    elements.topicPanel.classList.toggle("open");
+    syncTopicDrawer();
+    if (elements.topicPanel.classList.contains("open")) elements.topicSearch.focus();
   });
+  elements.closeTopics.addEventListener("click", () => { closeTopicDrawer(); elements.mobileTopics.focus(); });
+  elements.topicBackdrop.addEventListener("click", closeTopicDrawer);
+  narrowScreen.addEventListener("change", () => { if (!narrowScreen.matches) elements.topicPanel.classList.remove("open"); syncTopicDrawer(); });
+  syncTopicDrawer();
   document.querySelector("#closeDialog").addEventListener("click", () => elements.dialog.close());
   elements.dialog.addEventListener("click", (event) => {
     if (event.target === elements.dialog) elements.dialog.close();
