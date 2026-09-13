@@ -9,13 +9,13 @@
     "name": "洛谷"
   },
   "difficulty": {
-    "unified": "困难",
+    "unified": "中等",
     "original": "提高+/省选−"
   },
   "primary_topic": "graph_theory.shortest_path",
   "topics": [
-    "graph_theory.shortest_path",
-    "data_structures.heap"
+    "data_structures.heap",
+    "graph_theory.shortest_path"
   ],
   "status": "已解决",
   "cpp_standard": "C++20",
