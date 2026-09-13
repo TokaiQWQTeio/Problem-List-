@@ -475,6 +475,12 @@ async function currentSession(request, env) {
   return { ...row, raw, token: await decrypt(row.encrypted_access_token, row.token_nonce, env.SESSION_SECRET) };
 }
 
+async function githubReauthorizationResponse(env, session) {
+  if (session) await env.DB.prepare("DELETE FROM sessions WHERE session_hash = ?").bind(await sha256(session.raw)).run();
+  return json({ error: "GitHub 授权已失效，请重新连接账号后提交。", reauthorize: true }, 401,
+    { "set-cookie": sessionCookie("", 0) });
+}
+
 async function beginOAuth(request, env) {
   if (!env.GITHUB_CLIENT_ID || !env.GITHUB_CLIENT_SECRET || !env.SESSION_SECRET) {
     return json({ error: "站点管理员尚未完成 GitHub OAuth 配置。" }, 503);
@@ -813,6 +819,7 @@ async function createSubmission(request, env, session) {
     }
     return json({ ok: true, number: pull.number, url: pull.html_url, path: `problems/${value.folder}` }, 201);
   } catch (error) {
+    if (error.status === 401) return githubReauthorizationResponse(env, session);
     return json({ error: error.status === 422 ? "GitHub 拒绝了本次提交，可能存在同名分支或重复内容。" : `创建 Pull Request 失败：${error.message}` }, error.status && error.status < 500 ? error.status : 502);
   }
 }
@@ -920,6 +927,7 @@ async function createEdit(request, env, session) {
     }
     return json({ ok: true, number: pull.number, url: pull.html_url, path: `problems/${value.folder}` }, 201);
   } catch (error) {
+    if (error.status === 401) return githubReauthorizationResponse(env, session);
     const status = error.status && error.status < 500 ? error.status : 502;
     return json({ error: error.status === 422 ? "GitHub 拒绝了本次修改，可能存在同名分支或冲突。" : `创建修改 Pull Request 失败：${error.message}` }, status);
   }
@@ -983,12 +991,12 @@ async function router(request, env) {
   }
   if (request.method === "POST" && url.pathname === "/api/submissions") {
     const session = await currentSession(request, env);
-    if (!session) return json({ error: "请先使用获准的 GitHub 账号登录。" }, 401);
+    if (!session) return githubReauthorizationResponse(env, null);
     return createSubmission(request, env, session);
   }
   if (request.method === "POST" && url.pathname === "/api/edits") {
     const session = await currentSession(request, env);
-    if (!session) return json({ error: "请先使用获准的 GitHub 账号登录。" }, 401);
+    if (!session) return githubReauthorizationResponse(env, null);
     return createEdit(request, env, session);
   }
   return json({ error: "Not found" }, 404);
@@ -1001,4 +1009,4 @@ export default {
   },
 };
 
-export { adminAiRoute, aiCatalogue, availableModels, buildFiles, callAiModel, normalizeLuoguProblem, parseAiJson, readEditorialSections, resolveAiCredential, validateSubmission };
+export { adminAiRoute, aiCatalogue, availableModels, buildFiles, callAiModel, githubReauthorizationResponse, normalizeLuoguProblem, parseAiJson, readEditorialSections, resolveAiCredential, validateSubmission };

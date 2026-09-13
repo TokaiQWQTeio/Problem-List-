@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 
-const { buildFiles, readEditorialSections, validateSubmission } = await import("../dist/server/index.js");
+const { buildFiles, githubReauthorizationResponse, readEditorialSections, validateSubmission } = await import("../dist/server/index.js");
 
 const payload = {
   title: "测试题",
@@ -45,5 +45,12 @@ assert.equal(sections.test_notes, "边界测试");
 assert.throws(() => validateSubmission({ ...payload, change_summary: "" }, "edit"), /修改说明不能为空/);
 assert.throws(() => validateSubmission({ ...payload, tests: [] }, "edit"), /测试数据必须为/);
 assert.throws(() => validateSubmission({ ...payload, tests: [{ name: "../bad", input: "", output: "" }] }, "edit"), /测试名称无效/);
+
+let invalidated = false;
+const reauthorize = await githubReauthorizationResponse({ DB: { prepare: () => ({ bind: () => ({ run: async () => { invalidated = true; } }) }) } }, { raw: "expired-session" });
+assert.equal(reauthorize.status, 401);
+assert.equal((await reauthorize.json()).reauthorize, true);
+assert.match(reauthorize.headers.get("set-cookie"), /Max-Age=0/);
+assert.equal(invalidated, true);
 
 console.log("Edit submission checks passed.");

@@ -346,7 +346,12 @@ function formData() {
 
 function saveDraft() {
   clearTimeout(saveDraft.timer);
-  saveDraft.timer = setTimeout(() => localStorage.setItem(draftKey(), JSON.stringify({ fields: formData(), step: state.step })), 250);
+  saveDraft.timer = setTimeout(saveDraftNow, 250);
+}
+
+function saveDraftNow() {
+  clearTimeout(saveDraft.timer);
+  localStorage.setItem(draftKey(), JSON.stringify({ fields: formData(), step: state.step }));
 }
 
 function loadDraft() {
@@ -485,6 +490,7 @@ async function submitProblem(event) {
     if (!response.ok) {
       const error = new Error(result.error || "提交失败");
       error.url = result.url || "";
+      error.reauthorize = response.status === 401 && result.reauthorize === true;
       throw error;
     }
     localStorage.removeItem(draftKey());
@@ -492,7 +498,19 @@ async function submitProblem(event) {
     message.className = "message success";
     button.classList.add("hidden");
   } catch (error) {
-    if (error.url) message.innerHTML = `${escapeHtml(error.message)} <a href="${escapeHtml(error.url)}" target="_blank" rel="noopener">查看现有 Pull Request ↗</a>`;
+    if (error.reauthorize) {
+      try {
+        saveDraftNow();
+        message.textContent = `${error.message} 当前草稿已保存在此浏览器。`;
+        const link = document.createElement("a");
+        const returnTo = state.mode === "edit" ? `/?edit=${state.editDirectory}` : "/";
+        link.href = `/auth/github?return_to=${encodeURIComponent(returnTo)}`;
+        link.textContent = "重新连接 GitHub，返回草稿后再次提交 ↗";
+        message.append(" ", link);
+      } catch {
+        message.textContent = "GitHub 授权已失效，但浏览器未能保存草稿。请先把题解和代码复制到本地，再重新登录。";
+      }
+    } else if (error.url) message.innerHTML = `${escapeHtml(error.message)} <a href="${escapeHtml(error.url)}" target="_blank" rel="noopener">查看现有 Pull Request ↗</a>`;
     else message.textContent = error.message;
     message.className = "message error";
     button.disabled = false; $("#submit-label").textContent = state.mode === "edit" ? "创建修改 Pull Request" : "创建 Pull Request";
