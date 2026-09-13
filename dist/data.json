@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_on": "2026-09-11",
+  "generated_on": "2026-09-13",
   "difficulties": [
     "入门",
     "简单",
@@ -398,6 +398,32 @@
       "time_limit_seconds": 2,
       "notes": "## 题目描述\n\n给定一张有 `n` 个城市、`m` 条双向航线的带权图。旅客需要从城市 `s` 到达城市 `t`，途中至多可以选择 `k` 条航线免费乘坐，求最少总花费。\n\n## 输入格式\n\n第一行输入 `n m k`，分别表示城市数、航线数和最多免费乘坐次数。\n\n第二行输入 `s t`，表示起点和终点。\n\n接下来 `m` 行，每行输入 `a b c`，表示城市 `a` 与 `b` 之间有一条票价为 `c` 的双向航线。\n\n## 输出格式\n\n输出从 `s` 到 `t` 的最少花费。\n\n## 解题思路\n\n把“已经使用了多少次免费机会”加入最短路状态。令 `dist[u][used]` 表示到达城市 `u`、恰好使用 `used` 次免费机会时的最小花费，其中 `0 <= used <= k`。\n\n从状态 `(u, used)` 经过一条权值为 `w`、终点为 `v` 的航线时有两种选择：\n\n1. 正常付费，转移到 `(v, used)`，新增花费 `w`；\n2. 当 `used < k` 时免费乘坐，转移到 `(v, used + 1)`，新增花费 `0`。\n\n这等价于在一个有 `k + 1` 层的分层图上求最短路。所有边权都非负，因此使用优先队列优化的 Dijkstra 算法。最终答案是 `dist[t][0..k]` 中的最小值。\n\n## 正确性证明\n\n任意一条合法旅行路线，都可以按照每条航线是否使用免费机会，唯一对应为分层图中的一条路径：付费时留在同一层，免费时进入下一层。该路径的权值恰好等于旅行的实际花费，并且层数不会超过 `k`。\n\n反过来，分层图中从 `(s, 0)` 到任意 `(t, used)`（`used <= k`）的路径，也对应原图中的一条合法路线；跨层边代表免费乘坐，同层边代表正常付费，所以实际花费等于路径权值。\n\n因此，合法方案与分层图中的目标路径保持相同花费。Dijkstra 能正确求出非负权分层图中的最短距离，取所有终点层的最小值便得到至多使用 `k` 次免费机会时的最小花费。\n\n## 易错点与复盘\n\n- 城市编号范围是 `0` 到 `n - 1`。\n- 只有在 `used < k` 时才能转移到下一层，否则会越界并错误地使用更多免费机会。\n- 答案要在终点的所有层中取最小值，因为免费机会不要求全部用完。\n- 最短距离可能超过 `int` 范围，使用 `long long`。\n- 优先队列需要按距离从小到大弹出状态。\n\n## 复杂度\n\n- 时间复杂度：`O((n k + m k) log(n k))`\n- 空间复杂度：`O(n k + m)`\n\n## 测试说明\n\n- `sample1`：洛谷公开样例，一次免费机会应当用于降低最优路线的总费用。\n- `sample2`：`k = 0`，退化为普通最短路。\n- `sample3`：免费机会少于路径边数，并且不必全部边都付费。",
       "solution": "#include <bits/stdc++.h>\nusing namespace std;\n\n#define ull unsigned long long\n#define ll long long\n#define edl '\\n'\n\nconst int N = 1e5 + 10;\nconst ll INF = 1e18;\n\nll n, m, k;\nll s, t;\n\nvector<pair<ll, ll>> g[N];\n\nstruct QWQ {\n    ll x, w, used;\n\n    bool operator<(const QWQ& other) const {\n        if (w != other.w) return w > other.w;\n        return used > other.used;\n    }\n};\n\nll ck[N][20];\nll dp[N][20];\n\nvoid solve() {\n    cin >> n >> m >> k;\n    cin >> s >> t;\n    for (int i = 1; i <= m; i++) {\n        ll u, v, w;\n        cin >> u >> v >> w;\n        g[u].push_back({v, w});\n        g[v].push_back({u, w});\n    }\n\n    for (int i = 0; i < n; i++) {\n        for (int j = 0; j <= k; j++) {\n            dp[i][j] = INF;\n        }\n    }\n\n    priority_queue<QWQ> q;\n    q.push({s, 0, 0});\n    dp[s][0] = 0;\n\n    while (!q.empty()) {\n        auto [x, w, used] = q.top();\n        q.pop();\n        if (ck[x][used]) continue;\n        ck[x][used] = 1;\n\n        for (auto [u, v] : g[x]) {\n            if (used < k && dp[u][used + 1] > w) {\n                dp[u][used + 1] = w;\n                q.push({u, w, used + 1});\n            }\n            if (dp[u][used] > w + v) {\n                dp[u][used] = w + v;\n                q.push({u, w + v, used});\n            }\n        }\n    }\n\n    ll ans = INF;\n    for (int i = 0; i <= k; i++) ans = min(ans, dp[t][i]);\n    cout << ans << edl;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n\n    int test_cases = 1;\n    while (test_cases--) solve();\n    return 0;\n}\n"
+    },
+    {
+      "directory": "luogu-p5683-road-removal",
+      "title": "道路拆除",
+      "problem_id": "P5683",
+      "url": "https://www.luogu.com.cn/problem/P5683",
+      "source": {
+        "id": "luogu",
+        "name": "洛谷"
+      },
+      "difficulty": {
+        "unified": "中等",
+        "original": "普及+/提高"
+      },
+      "primary_topic": "graph_theory.shortest_path",
+      "topics": [
+        "fundamentals.enumeration",
+        "search.bfs",
+        "graph_theory.traversal",
+        "graph_theory.shortest_path"
+      ],
+      "status": "已解决",
+      "cpp_standard": "C++20",
+      "time_limit_seconds": 1,
+      "notes": "## 题目描述\n\n给定 n 个点 m 条边的无向无权图，1 号为首都。允许拆除任意多条边，要求剩余图中 1 到 s1 的最短路不超过 t1，且 1 到 s2 的最短路不超过 t2（两条件独立）。求最多可拆除的边数，无解输出 -1。\n\n## 输入格式\n\n第一行两个整数 n,m。接下来 m 行每行两个整数 x,y 表示一条无向边。最后一行四个整数 s1,t1,s2,t2。\n\n## 输出格式\n\n一行一个整数，表示最多可拆除的道路数；若无法满足条件则输出 -1。\n\n## 解题思路\n\n把保留的边看成连接 1、s1、s2 的子图。最优时可取一棵树，其形状为从 1 到某汇合点 v 的公共路径，再从 v 分叉到 s1 和 s2。枚举 v，用 BFS 求距离 d1[v]=dist(1,v)、d_s1[v]=dist(v,s1)、d_s2[v]=dist(v,s2)。若 d1[v]+d_s1[v]≤t1 且 d1[v]+d_s2[v]≤t2，则可保留 d1[v]+d_s1[v]+d_s2[v] 条边。对所有合法 v 取最小值 K，答案即 m-K；无合法 v 输出 -1。实现时可先对 1 做一次 BFS，再对每个点做一次 BFS 求到 s1、s2 的距离。\n\n## 正确性证明\n\n任意可行剩余图包含 1 到 s1、1 到 s2 的两条路径。取这两条路径的并集，可删去多余边得到一棵连接三点的子树。该子树中必存在汇合点 v，使得到 s1、s2 的路径在 v 之后分叉，且满足 d1[v]+d_s1[v]≤t1、d1[v]+d_s2[v]≤t2。保留边数为三者距离之和，枚举 v 即可取到最小。反过来，对合法 v 保留三条最短路并集，能保证两条最短路约束，故枚举最小保留边数即为最优。\n\n## 易错点与复盘\n\nt1,t2 可大于或小于实际最短路；s1=s2 时两条件仍独立但路径相同；无解输出 -1；每次 BFS 要重置访问标记与距离数组。\n\n## 复杂度\n\nO(n(n+m)) 时间，O(n+m) 空间（逐点 BFS）；若改用从 1、s1、s2 各做一次 BFS 可优化为 O(n+m)。\n\n## 测试说明\n\n可先用题面样例验证。建议补充 s1=s2、t 过小无解、链式图等边界。",
+      "solution": "#include<bits/stdc++.h>\nusing namespace std;\n\n#define ull unsigned long long\n#define ll long long\n#define edl '\\n'\n\nconst int N = 1e6 + 10;\nconst int M = 1e3 + 10;\n\nconst int mod = 1e9 + 7;\nll n,m,u,v,an1,an2,s2,t1,s1,t2;\nstring s;\n\nll a[N];\nll dp[N],dp1[N];\nll ck[N];\nvector<ll>g[N];\n\nvoid bfs(){\n\tdeque<ll>q;\n\tq.push_back(1);\n\twhile(!q.empty()){\n\t\tint x = q.front();\n\t\tq.pop_front();\n\t\tif(ck[x]) continue;\n\t\tck[x] = 1;\n\t\tfor(auto it : g[x]){\n\t\t\tif(!ck[it]){\n\t\t\t\tq.push_back(it);\n\t\t\t\tdp[it] = min(dp[x] + 1,dp[it]);\n\t\t\t}\n\t\t}\n\t}\n}\n\nvoid bbf(int i){\n\tdeque<ll>q;\n\tq.push_back(i);\n\twhile(!q.empty()){\n\t\tint x = q.front();\n\t\tq.pop_front();\n\t\tif(ck[x]) continue;\n\t\tck[x] = 1;\n\t\tfor(auto it : g[x]){\n\t\t\tif(!ck[it]){\n\t\t\t\tq.push_back(it);\n\t\t\t\tdp1[it] = min(dp1[x] + 1,dp1[it]);\n\t\t\t}\n\t\t}\n\t}\n\tif(dp1[s1] + dp[i] <= t1) an1 = dp1[s1];\n\tif(dp1[s2] + dp[i] <= t2) an2 = dp1[s2];\n}\n\nvoid solve()\n{\n\tcin >> n >> m;\n\tfor(int i = 1; i <= m; i ++ ){\n\t\tcin >> u >> v;\n\t\tg[u].push_back(v);\n\t\tg[v].push_back(u);\n\t}\n\tcin >> s1 >> t1 >> s2 >> t2;\n\tfor(int i = 1; i <= n; i ++ ) dp[i] = 1e18;\n\tdp[1] = 0;\n\tbfs();\n\tll ans = 1e18;\n\tfor(int i = 1; i <= n; i ++ ){\n\t\tfor(int j = 1; j <= n; j ++ ) ck[j] = 0,dp1[j] = 1e18;\n\t\tdp1[i] = 0;\n\t\tan1 = an2 = 1e18;\n\t\tbbf(i);\n\t\tans = min(ans,dp[i] + an1 + an2);\n\t}\n\tif(ans == 1e18) cout << -1 << edl;\n\telse cout << m - ans << edl;\n}\n\nint main()\n{\n\tstd::ios::sync_with_stdio(false);\n\tstd::cin.tie(nullptr);\n\tint t = 1;\n//\tcin >> t;\n\twhile(t -- ) solve();\n\treturn 0;\n}"
     }
   ]
 }
