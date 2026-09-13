@@ -49,6 +49,7 @@ async function initialize() {
     state.session = data;
     state.taxonomy = data.taxonomy;
     $("#username").textContent = `@${data.username}`;
+    $("#settings-link").classList.toggle("hidden", !data.is_ai_admin);
     renderSteps();
     renderTopics();
     setupAiIntake();

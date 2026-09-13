@@ -15,6 +15,13 @@
       "when": 1789286400000,
       "tag": "0001_ai_usage",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789372800000,
+      "tag": "0002_ai_admin",
+      "breakpoints": true
     }
   ]
 }

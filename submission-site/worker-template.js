@@ -17,6 +17,7 @@ const DEFAULT_AI_MODELS = [
   { provider: "zhipu", id: "glm-5.2", label: "智谱 · GLM-5.2" },
 ];
 const AI_KEYS = { openai: "AI_OPENAI_API_KEY", deepseek: "AI_DEEPSEEK_API_KEY", zhipu: "AI_ZHIPU_API_KEY" };
+const AI_PROVIDER_NAMES = { openai: "OpenAI", deepseek: "DeepSeek", zhipu: "智谱" };
 const AI_ENDPOINTS = {
   openai: "https://api.openai.com/v1/chat/completions",
   deepseek: "https://api.deepseek.com/chat/completions",
@@ -98,7 +99,7 @@ function returnCookie(value, maxAge = OAUTH_STATE_SECONDS) {
 
 function safeReturnTo(value) {
   const text = String(value || "");
-  return /^\/\?(?:edit=[a-z0-9-]+)?$/.test(text) ? text : "/";
+  return text === "/settings" || /^\/\?(?:edit=[a-z0-9-]+)?$/.test(text) ? text : "/";
 }
 
 function oauthRedirectUri(request) {
@@ -109,7 +110,7 @@ function isAllowed(username) {
   return SUBMITTERS.allowed_github_users.some((name) => name.toLowerCase() === username.toLowerCase());
 }
 
-function availableModels(env) {
+function configuredModels(env) {
   let configured = DEFAULT_AI_MODELS;
   if (env.AI_MODELS_JSON) {
     try {
@@ -119,8 +120,175 @@ function availableModels(env) {
   }
   return configured.filter((item) => item && Object.hasOwn(AI_KEYS, item.provider)
     && /^[a-zA-Z0-9._-]{2,80}$/.test(String(item.id || ""))
-    && typeof item.label === "string" && item.label.length <= 80
-    && Boolean(env[AI_KEYS[item.provider]])).slice(0, 20);
+    && typeof item.label === "string" && item.label.length <= 80).slice(0, 20);
+}
+
+function aiCatalogue(env, keyRows = [], modelRows = [], setting = null) {
+  const keyByProvider = new Map(keyRows.map((row) => [row.provider, row]));
+  const providers = Object.keys(AI_KEYS).map((id) => {
+    const row = keyByProvider.get(id);
+    const configured = row ? Boolean(row.encrypted_key && !row.disabled) : Boolean(env[AI_KEYS[id]]);
+    return { id, name: AI_PROVIDER_NAMES[id], configured, source: row ? "website" : (configured ? "environment" : "none") };
+  });
+  const providerReady = new Map(providers.map((item) => [item.id, item.configured]));
+  const defaults = configuredModels(env);
+  const builtIn = new Set(defaults.map((item) => `${item.provider}:${item.id}`));
+  const options = new Map(defaults.map((item) => [`${item.provider}:${item.id}`, { provider: item.provider, id: item.id, label: item.label, enabled: true, built_in: true }]));
+  for (const row of modelRows) {
+    if (!Object.hasOwn(AI_KEYS, row.provider) || !/^[A-Za-z0-9._-]{2,80}$/.test(row.model_id)) continue;
+    const key = `${row.provider}:${row.model_id}`;
+    options.set(key, { provider: row.provider, id: row.model_id, label: row.label, enabled: Boolean(row.enabled), built_in: builtIn.has(key) });
+  }
+  const models = [...options.values()].slice(0, 50).map((item) => ({ ...item, configured: providerReady.get(item.provider) || false }));
+  const enabled = models.filter((item) => item.enabled && item.configured);
+  const requestedDefault = setting?.default_provider && setting?.default_model_id ? `${setting.default_provider}:${setting.default_model_id}` : "openai:gpt-5.6-terra";
+  const defaultModel = enabled.some((item) => `${item.provider}:${item.id}` === requestedDefault)
+    ? requestedDefault : (enabled[0] ? `${enabled[0].provider}:${enabled[0].id}` : "");
+  return { providers, models, default_model: defaultModel };
+}
+
+function availableModels(env, keyRows = [], modelRows = [], setting = null) {
+  const catalogue = aiCatalogue(env, keyRows, modelRows, setting);
+  return catalogue.models.filter((item) => item.enabled && item.configured)
+    .sort((a, b) => Number(`${b.provider}:${b.id}` === catalogue.default_model) - Number(`${a.provider}:${a.id}` === catalogue.default_model))
+    .map(({ provider, id, label }) => ({ provider, id, label }));
+}
+
+async function loadAiCatalogue(env) {
+  const [keys, models, setting] = await Promise.all([
+    env.DB.prepare("SELECT provider, encrypted_key, disabled FROM ai_provider_keys").all(),
+    env.DB.prepare("SELECT provider, model_id, label, enabled FROM ai_model_options").all(),
+    env.DB.prepare("SELECT default_provider, default_model_id FROM ai_settings WHERE id = 1").first(),
+  ]);
+  return aiCatalogue(env, keys.results || [], models.results || [], setting);
+}
+
+async function resolveAiCredential(env, provider) {
+  if (!Object.hasOwn(AI_KEYS, provider)) return null;
+  const row = await env.DB.prepare("SELECT encrypted_key, key_nonce, disabled FROM ai_provider_keys WHERE provider = ?").bind(provider).first();
+  if (row) {
+    if (row.disabled || !row.encrypted_key || !row.key_nonce) return null;
+    return decrypt(row.encrypted_key, row.key_nonce, `ai-key-v1:${env.SESSION_SECRET}`);
+  }
+  return env[AI_KEYS[provider]] || null;
+}
+
+function isAiAdmin(session) {
+  return Boolean(session && isAllowed(session.username)
+    && session.username.toLowerCase() === SUBMITTERS.repository.owner.toLowerCase());
+}
+
+function validAiProvider(provider) {
+  return Object.hasOwn(AI_KEYS, provider);
+}
+
+function validModelId(id) {
+  return /^[A-Za-z0-9._-]{2,80}$/.test(String(id || ""));
+}
+
+async function readSmallJson(request) {
+  const text = await request.text();
+  if (encoder.encode(text).byteLength > 4096) throw new Error("设置内容不能超过 4KB");
+  const body = JSON.parse(text);
+  if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("设置内容格式不正确");
+  return body;
+}
+
+async function testAiCredential(provider, modelId, credential) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+  try {
+    const response = await fetch(AI_ENDPOINTS[provider], {
+      method: "POST",
+      headers: { authorization: `Bearer ${credential}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        model: modelId,
+        messages: [{ role: "user", content: "只回复 OK" }],
+        ...(provider === "openai" ? { max_completion_tokens: 256 } : { max_tokens: 64 }),
+      }),
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error(`模型服务返回 HTTP ${response.status}。请检查密钥、余额和模型权限。`);
+    const body = await response.json().catch(() => ({}));
+    if (!Array.isArray(body.choices)) throw new Error("模型服务未返回预期响应");
+  } finally { clearTimeout(timer); }
+}
+
+async function adminAiRoute(request, env, session, url) {
+  if (!isAiAdmin(session)) return json({ error: "只有题库管理员能管理模型设置。" }, session ? 403 : 401);
+  if (request.method !== "GET" && request.headers.get("x-csrf-token") !== session.csrf_token) {
+    return json({ error: "安全令牌已失效，请刷新页面后重试。" }, 403);
+  }
+  const path = url.pathname;
+  if (request.method === "GET" && path === "/api/admin/ai") return json(await loadAiCatalogue(env));
+
+  const keyMatch = path.match(/^\/api\/admin\/ai\/keys\/(openai|deepseek|zhipu)$/);
+  if (keyMatch && request.method === "PUT") {
+    try {
+      const body = await readSmallJson(request);
+      const key = String(body.key || "").trim();
+      if (key.length < 8 || key.length > 512 || /[\r\n\0\s]/.test(key)) throw new Error("密钥格式不正确：应为 8–512 个不含空白的字符");
+      const encrypted = await encrypt(key, `ai-key-v1:${env.SESSION_SECRET}`);
+      await env.DB.prepare(
+        "INSERT INTO ai_provider_keys (provider, encrypted_key, key_nonce, disabled, updated_at) VALUES (?, ?, ?, 0, ?) ON CONFLICT(provider) DO UPDATE SET encrypted_key = excluded.encrypted_key, key_nonce = excluded.key_nonce, disabled = 0, updated_at = excluded.updated_at",
+      ).bind(keyMatch[1], encrypted.encrypted, encrypted.nonce, new Date().toISOString()).run();
+      return json({ ok: true });
+    } catch (error) { return json({ error: error.message }, 400); }
+  }
+  if (keyMatch && request.method === "DELETE") {
+    await env.DB.prepare(
+      "INSERT INTO ai_provider_keys (provider, encrypted_key, key_nonce, disabled, updated_at) VALUES (?, NULL, NULL, 1, ?) ON CONFLICT(provider) DO UPDATE SET encrypted_key = NULL, key_nonce = NULL, disabled = 1, updated_at = excluded.updated_at",
+    ).bind(keyMatch[1], new Date().toISOString()).run();
+    return json({ ok: true });
+  }
+  const testMatch = path.match(/^\/api\/admin\/ai\/keys\/(openai|deepseek|zhipu)\/test$/);
+  if (testMatch && request.method === "POST") {
+    let body;
+    try { body = await readSmallJson(request); }
+    catch (error) { return json({ error: error.message }, 400); }
+    const catalogue = await loadAiCatalogue(env);
+    const model = catalogue.models.find((item) => item.provider === testMatch[1] && item.id === body.model_id);
+    if (!model) return json({ error: "请选择已添加的模型进行测试。" }, 400);
+    const credential = await resolveAiCredential(env, testMatch[1]);
+    if (!credential) return json({ error: "请先保存该服务商的密钥。" }, 400);
+    try { await testAiCredential(testMatch[1], model.id, credential); return json({ ok: true, model: model.id }); }
+    catch (error) { return json({ error: error.message }, 502); }
+  }
+  if (path === "/api/admin/ai/models" && request.method === "PUT") {
+    let body;
+    try { body = await readSmallJson(request); }
+    catch (error) { return json({ error: error.message }, 400); }
+    if (!validAiProvider(body.provider) || !validModelId(body.id)) return json({ error: "服务商或模型 ID 无效。" }, 400);
+    const label = String(body.label || "").trim();
+    if (!label || label.length > 80 || /[\r\n\0]/.test(label) || typeof body.enabled !== "boolean") return json({ error: "模型显示名称或开关状态无效。" }, 400);
+    const catalogue = await loadAiCatalogue(env);
+    if (!catalogue.models.some((item) => item.provider === body.provider && item.id === body.id) && catalogue.models.length >= 50) return json({ error: "最多允许 50 个模型选项。" }, 400);
+    await env.DB.prepare(
+      "INSERT INTO ai_model_options (provider, model_id, label, enabled, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(provider, model_id) DO UPDATE SET label = excluded.label, enabled = excluded.enabled, updated_at = excluded.updated_at",
+    ).bind(body.provider, body.id, label, Number(body.enabled), new Date().toISOString()).run();
+    return json({ ok: true });
+  }
+  const modelMatch = path.match(/^\/api\/admin\/ai\/models\/(openai|deepseek|zhipu)\/([A-Za-z0-9._-]{2,80})$/);
+  if (modelMatch && request.method === "DELETE") {
+    const builtIn = configuredModels(env).some((item) => item.provider === modelMatch[1] && item.id === modelMatch[2]);
+    if (builtIn) return json({ error: "预设模型不能删除，可以关闭开关。" }, 400);
+    await env.DB.prepare("DELETE FROM ai_model_options WHERE provider = ? AND model_id = ?").bind(modelMatch[1], modelMatch[2]).run();
+    return json({ ok: true });
+  }
+  if (path === "/api/admin/ai/default" && request.method === "PUT") {
+    let body;
+    try { body = await readSmallJson(request); }
+    catch (error) { return json({ error: error.message }, 400); }
+    const catalogue = await loadAiCatalogue(env);
+    if (!catalogue.models.some((item) => item.provider === body.provider && item.id === body.id && item.enabled && item.configured)) {
+      return json({ error: "默认模型必须已开放且已配置密钥。" }, 400);
+    }
+    await env.DB.prepare(
+      "INSERT INTO ai_settings (id, default_provider, default_model_id) VALUES (1, ?, ?) ON CONFLICT(id) DO UPDATE SET default_provider = excluded.default_provider, default_model_id = excluded.default_model_id",
+    ).bind(body.provider, body.id).run();
+    return json({ ok: true });
+  }
+  return json({ error: "Not found" }, 404);
 }
 
 function safeText(value, max = 15000) {
@@ -181,13 +349,13 @@ function parseAiJson(content) {
   return parsed;
 }
 
-async function callAiModel(model, env, prompt) {
+async function callAiModel(model, credential, prompt) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 90000);
   try {
     const response = await fetch(AI_ENDPOINTS[model.provider], {
       method: "POST",
-      headers: { authorization: `Bearer ${env[AI_KEYS[model.provider]]}`, "content-type": "application/json" },
+      headers: { authorization: `Bearer ${credential}`, "content-type": "application/json" },
       body: JSON.stringify({
         model: model.id,
         messages: [
@@ -215,7 +383,8 @@ async function generateAiDraft(request, env, session) {
     if (encoder.encode(raw).byteLength > 250_000) return json({ error: "AI 请求内容不能超过 250KB。" }, 413);
     input = JSON.parse(raw);
   } catch { return json({ error: "AI 请求格式不正确。" }, 400); }
-  const models = availableModels(env);
+  const catalogue = await loadAiCatalogue(env);
+  const models = catalogue.models.filter((item) => item.enabled && item.configured);
   const model = models.find((item) => `${item.provider}:${item.id}` === input.model);
   if (!model) return json({ error: "所选模型不可用，请检查管理员配置。" }, 400);
   const pid = String(input.problem_id || "").trim().toUpperCase();
@@ -242,7 +411,9 @@ async function generateAiDraft(request, env, session) {
     allowed_topics: allowedTopics,
   });
   try {
-    const draft = await callAiModel(model, env, prompt);
+    const credential = await resolveAiCredential(env, model.provider);
+    if (!credential) return json({ error: "所选模型的密钥未配置或已停用。" }, 503);
+    const draft = await callAiModel(model, credential, prompt);
     const topicIds = new Set(allowedTopics.map((topic) => topic.id));
     const topics = [...new Set((Array.isArray(draft.topics) ? draft.topics : []).filter((id) => topicIds.has(id)))].slice(0, 12);
     const primaryTopic = topics.includes(draft.primary_topic) ? draft.primary_topic : (topics[0] || "");
@@ -748,6 +919,17 @@ async function router(request, env) {
   if (request.method === "GET" && url.pathname === "/") return asset("index.html", "text/html");
   if (request.method === "GET" && url.pathname === "/styles.css") return asset("styles.css", "text/css");
   if (request.method === "GET" && url.pathname === "/app.js") return asset("app.js", "text/javascript");
+  if (request.method === "GET" && url.pathname === "/settings") {
+    const session = await currentSession(request, env);
+    if (!session) return Response.redirect(`${url.origin}/auth/github?return_to=%2Fsettings`, 302);
+    if (!isAiAdmin(session)) return json({ error: "只有题库管理员能查看设置页。" }, 403);
+    return asset("settings.html", "text/html");
+  }
+  if (request.method === "GET" && url.pathname === "/settings.js") {
+    const session = await currentSession(request, env);
+    if (!isAiAdmin(session)) return json({ error: "无权访问。" }, 403);
+    return asset("settings.js", "text/javascript");
+  }
   if (request.method === "GET" && url.pathname === "/auth/github") return beginOAuth(request, env);
   if (request.method === "GET" && url.pathname === "/auth/callback") return finishOAuth(request, env);
   if (request.method === "POST" && url.pathname === "/auth/logout") {
@@ -757,7 +939,16 @@ async function router(request, env) {
   }
   if (request.method === "GET" && url.pathname === "/api/session") {
     const session = await currentSession(request, env);
-    return json(session ? { authenticated: true, username: session.username, csrf: session.csrf_token, taxonomy: TAXONOMY, repository: SUBMITTERS.repository, ai_models: availableModels(env).map(({ provider, id, label }) => ({ provider, id, label })) } : { authenticated: false });
+    if (!session) return json({ authenticated: false });
+    const catalogue = await loadAiCatalogue(env);
+    const models = catalogue.models.filter((item) => item.enabled && item.configured)
+      .sort((a, b) => Number(`${b.provider}:${b.id}` === catalogue.default_model) - Number(`${a.provider}:${a.id}` === catalogue.default_model))
+      .map(({ provider, id, label }) => ({ provider, id, label }));
+    return json({ authenticated: true, username: session.username, is_ai_admin: isAiAdmin(session), csrf: session.csrf_token, taxonomy: TAXONOMY, repository: SUBMITTERS.repository, ai_models: models });
+  }
+  if (url.pathname.startsWith("/api/admin/ai")) {
+    const session = await currentSession(request, env);
+    return adminAiRoute(request, env, session, url);
   }
   if (request.method === "GET" && url.pathname.startsWith("/api/ai/luogu/")) {
     const session = await currentSession(request, env);
@@ -799,4 +990,4 @@ export default {
   },
 };
 
-export { availableModels, buildFiles, normalizeLuoguProblem, parseAiJson, readEditorialSections, validateSubmission };
+export { adminAiRoute, aiCatalogue, availableModels, buildFiles, normalizeLuoguProblem, parseAiJson, readEditorialSections, resolveAiCredential, validateSubmission };

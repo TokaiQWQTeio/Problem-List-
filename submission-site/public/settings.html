@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ALGO INDEX 模型与 API 密钥设置。">
+  <title>模型设置 · ALGO INDEX</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="noise"></div>
+  <header class="topbar"><a class="brand" href="/"><span>ALGO</span> INDEX</a><a class="browse-link" href="/">返回录题台 ↗</a></header>
+  <main class="settings-page">
+    <div class="settings-head"><p class="eyebrow">ADMIN / AI SETTINGS</p><h1>模型设置</h1><p>仅题库管理员可管理。密钥保存后不会显示完整内容；录题者只能使用你开放的模型。</p></div>
+    <div id="settings-message" class="message hidden" role="status" aria-live="polite"></div>
+    <section class="settings-section"><div class="settings-section-title"><h2>服务商密钥</h2><p>填写官方 API 密钥后保存；“测试连接”只在你点击时调用模型。</p></div><div id="provider-list" class="provider-list"><p>正在读取设置…</p></div></section>
+    <section class="settings-section"><div class="settings-section-title"><h2>可用模型</h2><p>开关决定录题页可选型号。新模型先添加、测试，再开放。</p></div><div id="model-list" class="model-list"></div>
+      <form id="add-model" class="add-model"><h3>添加官方模型 ID</h3><div class="grid two"><label>服务商<select name="provider"><option value="openai">OpenAI</option><option value="deepseek">DeepSeek</option><option value="zhipu">智谱</option></select></label><label>模型 ID<input name="id" maxlength="80" pattern="[A-Za-z0-9._-]{2,80}" required placeholder="例如：gpt-5.6-terra" autocomplete="off"></label></div><label>显示名称<input name="label" maxlength="80" required placeholder="例如：GPT · 均衡"></label><label class="confirmation"><input name="enabled" type="checkbox"><span>添加后立即开放（建议先测试连接）</span></label><button type="submit" class="secondary-button">添加模型</button></form>
+    </section>
+    <section class="settings-section"><div class="settings-section-title"><h2>默认模型</h2><p>录题页初次打开时预选的模型。</p></div><div class="default-model"><select id="default-model" aria-label="默认模型"></select><button id="save-default" type="button" class="primary-button">保存默认模型</button></div></section>
+  </main>
+  <footer>ALGO INDEX · 题目录入台 · 管理员设置</footer>
+  <script type="module" src="/settings.js?build=20260914-1"></script>
+</body>
+</html>

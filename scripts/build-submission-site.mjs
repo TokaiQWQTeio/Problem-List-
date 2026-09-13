@@ -12,6 +12,8 @@ const assets = {
   "index.html": read(path.join(source, "public", "index.html")),
   "styles.css": read(path.join(source, "public", "styles.css")),
   "app.js": read(path.join(source, "public", "app.js")),
+  "settings.html": read(path.join(source, "public", "settings.html")),
+  "settings.js": read(path.join(source, "public", "settings.js")),
 };
 
 let worker = read(path.join(source, "worker-template.js"));
