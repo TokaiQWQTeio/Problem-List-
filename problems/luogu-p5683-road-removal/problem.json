@@ -17,7 +17,8 @@
     "fundamentals.enumeration",
     "search.bfs",
     "graph_theory.traversal",
-    "graph_theory.shortest_path"
+    "graph_theory.shortest_path",
+    "graph_theory.unweighted_shortest_path"
   ],
   "status": "已解决",
   "cpp_standard": "C++20",

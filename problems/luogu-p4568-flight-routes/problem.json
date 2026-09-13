@@ -15,7 +15,9 @@
   "primary_topic": "graph_theory.shortest_path",
   "topics": [
     "data_structures.heap",
-    "graph_theory.shortest_path"
+    "graph_theory.shortest_path",
+    "graph_theory.dijkstra",
+    "graph_theory.layered_shortest_path"
   ],
   "status": "已解决",
   "cpp_standard": "C++20",

@@ -230,3 +230,21 @@ select,.ghost-button { color:var(--text); background:#f5f9fa; }
 .site-footer a { color:#08718e; }
 @media(max-width:840px) { .workspace { padding-top:20px; } .hero-art { right:-25px; opacity:.65; } .topic-panel { position:static; } }
 @media(max-width:620px) { .library-hero { min-height:250px; padding:28px 24px; } .hero-art { height:330px; right:-105px; bottom:-100px; opacity:.43; max-width:none; } .library-hero .hero-copy { max-width:100%; } .library-hero p:last-child { max-width:260px; font-size:.86rem; } .controls { margin:-12px 4px 0; } .select-row { grid-template-columns:1fr 1fr; } .mobile-topics { min-height:40px; } .topic-panel { margin:12px 4px 0; } .stats .stat:last-child { display:none; } }
+
+/* Searchable, fine-grained knowledge point browser. */
+[hidden] { display:none !important; }
+.topic-search-field { display:block; margin-bottom:14px; }
+.topic-search-field input { width:100%; min-height:43px; padding:9px 13px; border:1px solid var(--line-bright); border-radius:9px; color:var(--text); background:#f8fbfc; font:inherit; }
+.category-nav { display:block; max-height:min(58vh,550px); overflow-y:auto; }
+.category-nav > .all-topics { margin-bottom:9px; }
+.topic-category { margin:7px 0; padding:0 12px; border:1px solid var(--line); border-radius:12px; background:#fafdfe; }
+.topic-category > summary { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 4px; color:var(--text); font-weight:700; cursor:pointer; list-style:none; }
+.topic-category > summary::-webkit-details-marker { display:none; }
+.topic-category > summary:before { content:"▸"; margin-right:5px; color:var(--cyan); transition:transform .15s ease; }
+.topic-category[open] > summary:before { transform:rotate(90deg); }
+.topic-category > summary > span:first-child { flex:1; }
+.topic-choices { display:flex; flex-wrap:wrap; gap:7px; padding:2px 0 14px; }
+.topic-choices .category-button { min-height:34px; }
+.topic-choices .category-button[data-topic]:not(.topic-choice) { color:#0b7793; background:#e9f5f8; }
+.mobile-topics { min-width:150px; }
+#topicCount { font-size:.76rem; opacity:.72; }

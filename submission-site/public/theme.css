@@ -103,3 +103,17 @@ footer a { color:#087e9b; }
 @media(max-width:760px) { .hero { padding:60px 26px; } .hero-copy { max-width:100%; } .hero .lead { max-width:440px; } .ai-intake { padding:26px; } .ai-heading { flex-direction:column; } .intake-art { width:65%; right:-70px; top:0; } .section-links { top:0; } .section-links button { margin-left:0; } .form-step { scroll-margin-top:100px; } }
 @media(max-width:550px) { .hero { padding:60px 20px; } .hero:before { inset:15px 0; } .hero:after { bottom:15px; } .hero h1 { font-size:48px; } .login-art { opacity:.29; height:440px; right:-180px; bottom:0; } .workspace-head { align-items:flex-start; } .user-box { flex-wrap:wrap; border-radius:14px; } .ai-intake.compact .intake-art { opacity:.55; } .section-links a { font-size:11px; padding:7px; } }
 @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+
+/* Fine-grained taxonomy stays usable in the single-page editor. */
+[hidden] { display:none !important; }
+.topic-search-label { display:block; margin:14px 0 10px; }
+.topic-search-label input { min-height:46px; }
+.topic-groups { align-items:start; }
+.topic-group { min-width:0; }
+.topic-group summary { display:flex; justify-content:space-between; gap:10px; align-items:center; color:#087e9b; font-weight:700; cursor:pointer; list-style:none; }
+.topic-group summary::-webkit-details-marker { display:none; }
+.topic-group summary:before { content:"▸"; color:#dc667e; }
+.topic-group[open] summary:before { transform:rotate(90deg); }
+.topic-group summary span { margin-left:auto; color:var(--muted); font:12px var(--mono); }
+.topic-group .topic-checks { padding-top:15px; max-height:290px; overflow-y:auto; }
+.topic-check[hidden] { display:none !important; }

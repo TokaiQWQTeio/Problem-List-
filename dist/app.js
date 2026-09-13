@@ -1,6 +1,8 @@
 const state = {
   data: null,
   topic: "",
+  topicSearch: "",
+  openCategories: new Set(),
   search: "",
   difficulty: "",
   source: "",
@@ -10,6 +12,8 @@ const state = {
 const elements = {
   categoryNav: document.querySelector("#categoryNav"),
   topicCount: document.querySelector("#topicCount"),
+  activeTopicLabel: document.querySelector("#activeTopicLabel"),
+  topicSearch: document.querySelector("#topicSearchInput"),
   stats: document.querySelector("#stats"),
   search: document.querySelector("#searchInput"),
   difficulty: document.querySelector("#difficultyFilter"),
@@ -84,16 +88,55 @@ function categoryCount(category) {
 
 function renderCategories() {
   const all = document.createElement("button");
-  all.className = `category-button${state.topic === "" ? " active" : ""}`;
+  all.className = `category-button all-topics${state.topic === "" ? " active" : ""}`;
   all.dataset.topic = "";
   all.innerHTML = `<span>全部题目</span><span class="category-count">${state.data.problems.length}</span>`;
   elements.categoryNav.replaceChildren(all);
   state.data.categories.forEach((category) => {
-    const button = document.createElement("button");
-    button.className = `category-button${state.topic === category.id ? " active" : ""}`;
-    button.dataset.topic = category.id;
-    button.innerHTML = `<span>${escapeHtml(category.name)}</span><span class="category-count">${categoryCount(category)}</span>`;
-    elements.categoryNav.append(button);
+    const details = document.createElement("details");
+    details.className = "topic-category";
+    details.dataset.category = category.id;
+    details.open = state.openCategories.has(category.id) || state.topic === category.id || category.topics.some((topic) => topic.id === state.topic);
+    const summary = document.createElement("summary");
+    summary.innerHTML = `<span>${escapeHtml(category.name)}</span><span class="category-count">${category.topics.length} 个知识点 · ${categoryCount(category)} 道题</span>`;
+    details.append(summary);
+    const choices = document.createElement("div");
+    choices.className = "topic-choices";
+    const categoryButton = document.createElement("button");
+    categoryButton.className = `category-button${state.topic === category.id ? " active" : ""}`;
+    categoryButton.dataset.topic = category.id;
+    categoryButton.textContent = `全部${category.name}`;
+    choices.append(categoryButton);
+    category.topics.forEach((topic) => {
+      const button = document.createElement("button");
+      button.className = `category-button topic-choice${state.topic === topic.id ? " active" : ""}`;
+      button.dataset.topic = topic.id;
+      button.dataset.search = topic.name.toLocaleLowerCase("zh-CN");
+      const count = state.data.problems.filter((problem) => problem.topics.includes(topic.id)).length;
+      button.innerHTML = `<span>${escapeHtml(topic.name)}</span><span class="category-count">${count}</span>`;
+      choices.append(button);
+    });
+    details.append(choices);
+    elements.categoryNav.append(details);
+  });
+  applyTopicSearch();
+  const selected = state.data.categories.find((category) => category.id === state.topic);
+  elements.activeTopicLabel.textContent = selected?.name || topicMap().get(state.topic)?.name || "知识点筛选";
+}
+
+function applyTopicSearch() {
+  const query = state.topicSearch.trim().toLocaleLowerCase("zh-CN");
+  elements.categoryNav.querySelector(".all-topics").hidden = Boolean(query);
+  elements.categoryNav.querySelectorAll(".topic-category").forEach((details) => {
+    const category = state.data.categories.find((item) => item.id === details.dataset.category);
+    const categoryMatch = category.name.toLocaleLowerCase("zh-CN").includes(query);
+    let visible = 0;
+    details.querySelectorAll(".topic-choice").forEach((button) => {
+      button.hidden = Boolean(query) && !categoryMatch && !button.dataset.search.includes(query);
+      if (!button.hidden) visible += 1;
+    });
+    details.hidden = Boolean(query) && !categoryMatch && !visible;
+    if (query && !details.hidden) details.open = true;
   });
 }
 
@@ -105,12 +148,10 @@ function filteredProblems() {
   const topics = topicMap();
   const query = state.search.trim().toLocaleLowerCase("zh-CN");
   return state.data.problems.filter((problem) => {
-    const category = state.topic
-      ? state.data.categories.find((item) => item.id === state.topic)
-      : null;
-    const matchesTopic = !category || problem.topics.some((topic) =>
-      category.topics.some((item) => item.id === topic)
-    );
+    const category = state.data.categories.find((item) => item.id === state.topic);
+    const matchesTopic = !state.topic || (category
+      ? problem.topics.some((topic) => category.topics.some((item) => item.id === topic))
+      : problem.topics.includes(state.topic));
     const haystack = [
       problem.title,
       problem.problem_id,
@@ -128,9 +169,8 @@ function filteredProblems() {
 function renderProblems() {
   const problems = filteredProblems();
   const topics = topicMap();
-  const selectedCategory = state.topic
-    ? state.data.categories.find((category) => category.id === state.topic)?.name
-    : "全部知识点";
+  const selectedCategory = state.data.categories.find((category) => category.id === state.topic)?.name
+    || topicMap().get(state.topic)?.name || "全部知识点";
   elements.summary.textContent = `${selectedCategory} · ${problems.length} 道题`;
   elements.grid.replaceChildren();
   problems.forEach((problem) => {
@@ -206,6 +246,12 @@ function bindEvents() {
     elements.mobileTopics.setAttribute("aria-expanded", "false");
     render();
   });
+  elements.categoryNav.addEventListener("toggle", (event) => {
+    if (!event.target.matches("details[data-category]") || state.topicSearch) return;
+    if (event.target.open) state.openCategories.add(event.target.dataset.category);
+    else state.openCategories.delete(event.target.dataset.category);
+  }, true);
+  elements.topicSearch.addEventListener("input", (event) => { state.topicSearch = event.target.value; applyTopicSearch(); });
   elements.search.addEventListener("input", (event) => { state.search = event.target.value; renderProblems(); });
   [[elements.difficulty, "difficulty"], [elements.source, "source"], [elements.status, "status"]].forEach(([element, key]) => {
     element.addEventListener("change", (event) => { state[key] = event.target.value; renderProblems(); });
@@ -257,7 +303,7 @@ function registerWebMCP() {
       type: "object",
       properties: {
         search: { type: "string", description: "题名、题号、来源或知识点关键词" },
-        topic: { type: "string", description: "一级算法分类 ID；空字符串表示全部" },
+        topic: { type: "string", description: "算法分类或细分知识点 ID；空字符串表示全部" },
         difficulty: { type: "string", description: "统一难度；空字符串表示全部" },
         source: { type: "string", description: "来源名称；空字符串表示全部" },
         status: { type: "string", description: "学习状态；空字符串表示全部" },
@@ -272,7 +318,7 @@ function registerWebMCP() {
       for (const [key, value] of Object.entries(input)) {
         if (typeof value !== "string") throw new Error(`${key} 必须是字符串`);
       }
-      if (input.topic && !categories.includes(input.topic)) throw new Error("未知算法分类");
+      if (input.topic && !categories.includes(input.topic) && !topicMap().has(input.topic)) throw new Error("未知算法分类或知识点");
       if (input.difficulty && !state.data.difficulties.includes(input.difficulty)) throw new Error("未知难度");
       if (input.source && !sources.includes(input.source)) throw new Error("未知来源");
       if (input.status && !state.data.statuses.includes(input.status)) throw new Error("未知状态");

@@ -6,7 +6,7 @@
   <meta name="description" content="ALGO INDEX 题目录入台，通过 GitHub 登录并创建题目 Pull Request。">
   <title>题目录入台 · ALGO INDEX</title>
   <link rel="stylesheet" href="/styles.css">
-  <link rel="stylesheet" href="/theme.css?build=20260914-1">
+  <link rel="stylesheet" href="/theme.css?build=20260914-2">
 </head>
 <body>
   <div class="noise"></div>
@@ -76,7 +76,7 @@
             <label>状态<select name="status" required><option selected>待做</option><option>尝试中</option><option>已解决</option><option>需复习</option></select></label>
             <label>运行超时（秒）<input name="time_limit_seconds" type="number" min="0.01" max="120" step="0.01" value="2" required></label>
           </div>
-          <fieldset><legend>知识点（可多选）</legend><div id="topics" class="topic-groups"></div></fieldset>
+          <fieldset><legend>知识点（可多选，最多 12 个）</legend><label class="topic-search-label"><span class="sr-only">搜索知识点</span><input id="topic-search" type="search" placeholder="搜索细分知识点，例如 Dijkstra、树链剖分…" autocomplete="off"></label><div id="topics" class="topic-groups"></div></fieldset>
           <label>主要知识点<select id="primary-topic" name="primary_topic" required><option value="">请先选择知识点</option></select></label>
         </section>
 
@@ -129,6 +129,6 @@ int main() {
     </section>
   </main>
   <footer>TEIO ALGO INDEX · C++20 · <a href="https://umamusume.jp/character/tokaiteio" target="_blank" rel="noopener noreferrer">角色立绘 © Cygames, Inc.</a> · 非官方个人题库</footer>
-  <script type="module" src="/app.js?build=20260914-3"></script>
+  <script type="module" src="/app.js?build=20260914-4"></script>
 </body>
 </html>

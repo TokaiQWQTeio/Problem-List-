@@ -81,9 +81,23 @@ function renderSteps() {
 
 function renderTopics() {
   $("#topics").innerHTML = state.taxonomy.categories.map((category) => `
-    <section class="topic-group"><h3>${escapeHtml(category.name)}</h3><div class="topic-checks">
+    <details class="topic-group" data-category-name="${escapeHtml(category.name)}" ${category.id === "fundamentals" ? "open" : ""}><summary>${escapeHtml(category.name)}<span>${category.topics.length} 个</span></summary><div class="topic-checks">
       ${category.topics.map((topic) => `<label class="topic-check"><input type="checkbox" name="topics" value="${escapeHtml(topic.id)}"><span>${escapeHtml(topic.name)}</span></label>`).join("")}
-    </div></section>`).join("");
+    </div></details>`).join("");
+}
+
+function filterIntakeTopics() {
+  const query = $("#topic-search").value.trim().toLocaleLowerCase("zh-CN");
+  $$(".topic-group").forEach((group) => {
+    const categoryMatch = group.dataset.categoryName.toLocaleLowerCase("zh-CN").includes(query);
+    let visible = 0;
+    $$(".topic-check", group).forEach((label) => {
+      label.hidden = Boolean(query) && !categoryMatch && !label.textContent.toLocaleLowerCase("zh-CN").includes(query);
+      if (!label.hidden) visible += 1;
+    });
+    group.hidden = Boolean(query) && !categoryMatch && !visible;
+    if (query && !group.hidden) group.open = true;
+  });
 }
 
 async function loadProblemForEdit() {
@@ -121,6 +135,7 @@ function populateForm(problem) {
 }
 
 function bindEvents() {
+  $("#topic-search").addEventListener("input", filterIntakeTopics);
   $("#ai-fetch").addEventListener("click", fetchAiSource);
   $("#ai-generate").addEventListener("click", generateAiEntry);
   $("#manual-entry").addEventListener("click", () => enterReviewMode());
@@ -139,7 +154,13 @@ function bindEvents() {
     if (target <= state.step || validateStep()) { state.step = target; updateStep(); }
   });
   form.addEventListener("input", () => { syncTopics(); updateCodeSize(); saveDraft(); schedulePreview(); });
-  form.addEventListener("change", () => { syncTopics(); saveDraft(); schedulePreview(); });
+  form.addEventListener("change", (event) => {
+    if (event.target.matches('input[name="topics"]') && $$("input[name=topics]:checked").length > 12) {
+      event.target.checked = false;
+      alert("每道题最多选择 12 个知识点，请保留最相关的标签。");
+    }
+    syncTopics(); saveDraft(); schedulePreview();
+  });
   form.addEventListener("submit", submitProblem);
   $("#add-test").addEventListener("click", () => { if (state.tests.length < 20) { state.tests.push({ name: nextTestName(), input: "", output: "" }); renderTests(); saveDraft(); } });
   $("#tests").addEventListener("click", (event) => {
@@ -312,6 +333,7 @@ function validateStep() {
   if (state.step === 1) {
     const selected = $$("input[name=topics]:checked");
     if (!selected.length) { alert("请至少选择一个知识点。"); return false; }
+    if (selected.length > 12) { alert("知识点最多选择 12 个。"); return false; }
     if (!$("#primary-topic").value) { alert("请选择主要知识点。"); return false; }
   }
   if (state.step === 3 && new TextEncoder().encode($("#code").value).length > 200_000) { alert("C++ 代码不能超过 200KB。"); return false; }
@@ -336,6 +358,9 @@ function validateAll() {
 
 function syncTopics() {
   const selected = $$("input[name=topics]:checked").map((item) => item.value);
+  if (!$("#topic-search").value.trim()) {
+    $$("input[name=topics]:checked").forEach((item) => { item.closest(".topic-group").open = true; });
+  }
   const select = $("#primary-topic");
   const current = select.value;
   const names = new Map(state.taxonomy.categories.flatMap((category) => category.topics.map((topic) => [topic.id, topic.name])));

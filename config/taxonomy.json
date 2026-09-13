@@ -13,6 +13,15 @@
         {"id": "fundamentals.divide_conquer", "name": "分治"},
         {"id": "fundamentals.bitwise", "name": "位运算"},
         {"id": "fundamentals.coordinate_compression", "name": "离散化"}
+        ,{"id": "fundamentals.brute_force", "name": "暴力枚举"}
+        ,{"id": "fundamentals.ternary_search", "name": "三分搜索"}
+        ,{"id": "fundamentals.binary_lifting", "name": "倍增"}
+        ,{"id": "fundamentals.sliding_window", "name": "滑动窗口"}
+        ,{"id": "fundamentals.difference_array", "name": "差分数组"}
+        ,{"id": "fundamentals.two_dimensional_prefix_sum", "name": "二维前缀和"}
+        ,{"id": "fundamentals.quick_sort", "name": "快速排序"}
+        ,{"id": "fundamentals.merge_sort", "name": "归并排序"}
+        ,{"id": "fundamentals.inversion_count", "name": "逆序对"}
       ]
     },
     {
@@ -31,6 +40,19 @@
         {"id": "data_structures.balanced_tree", "name": "平衡树"},
         {"id": "data_structures.trie", "name": "Trie"},
         {"id": "data_structures.persistent", "name": "可持久化数据结构"}
+        ,{"id": "data_structures.monotonic_stack", "name": "单调栈"}
+        ,{"id": "data_structures.monotonic_queue", "name": "单调队列"}
+        ,{"id": "data_structures.weighted_disjoint_set", "name": "带权并查集"}
+        ,{"id": "data_structures.extended_disjoint_set", "name": "扩展域并查集"}
+        ,{"id": "data_structures.lazy_segment_tree", "name": "懒标记线段树"}
+        ,{"id": "data_structures.dynamic_segment_tree", "name": "动态开点线段树"}
+        ,{"id": "data_structures.persistent_segment_tree", "name": "可持久化线段树"}
+        ,{"id": "data_structures.weight_segment_tree", "name": "权值线段树"}
+        ,{"id": "data_structures.segment_tree_merge", "name": "线段树合并"}
+        ,{"id": "data_structures.block_decomposition", "name": "分块"}
+        ,{"id": "data_structures.mo_algorithm", "name": "莫队算法"}
+        ,{"id": "data_structures.link_cut_tree", "name": "动态树 LCT"}
+        ,{"id": "data_structures.kd_tree", "name": "K-D Tree"}
       ]
     },
     {
@@ -44,6 +66,10 @@
         {"id": "search.bidirectional", "name": "双向搜索"},
         {"id": "search.iterative_deepening", "name": "迭代加深"},
         {"id": "search.heuristic", "name": "启发式搜索"}
+        ,{"id": "search.memoization", "name": "记忆化搜索"}
+        ,{"id": "search.a_star", "name": "A* 搜索"}
+        ,{"id": "search.ida_star", "name": "IDA* 搜索"}
+        ,{"id": "search.exact_cover", "name": "精确覆盖 DLX"}
       ]
     },
     {
@@ -58,6 +84,15 @@
         {"id": "dynamic_programming.state_compression", "name": "状压 DP"},
         {"id": "dynamic_programming.probability", "name": "概率与期望 DP"},
         {"id": "dynamic_programming.optimization", "name": "DP 优化"}
+        ,{"id": "dynamic_programming.zero_one_knapsack", "name": "01 背包"}
+        ,{"id": "dynamic_programming.complete_knapsack", "name": "完全背包"}
+        ,{"id": "dynamic_programming.multiple_knapsack", "name": "多重背包"}
+        ,{"id": "dynamic_programming.rerooting", "name": "换根 DP"}
+        ,{"id": "dynamic_programming.profile", "name": "插头 DP / 轮廓线 DP"}
+        ,{"id": "dynamic_programming.dag", "name": "DAG 上的 DP"}
+        ,{"id": "dynamic_programming.monotonic_queue_optimization", "name": "单调队列优化 DP"}
+        ,{"id": "dynamic_programming.convex_hull_optimization", "name": "斜率优化 DP"}
+        ,{"id": "dynamic_programming.divide_conquer_optimization", "name": "分治优化 DP"}
       ]
     },
     {
@@ -67,6 +102,8 @@
         {"id": "greedy.basic", "name": "基础贪心"},
         {"id": "greedy.interval", "name": "区间贪心"},
         {"id": "greedy.scheduling", "name": "调度问题"}
+        ,{"id": "greedy.exchange_argument", "name": "交换论证"}
+        ,{"id": "greedy.priority_queue", "name": "堆优化贪心"}
       ]
     },
     {
@@ -84,6 +121,26 @@
         {"id": "graph_theory.euler", "name": "欧拉路径"},
         {"id": "graph_theory.lca", "name": "最近公共祖先"},
         {"id": "graph_theory.tree", "name": "树上问题"}
+        ,{"id": "graph_theory.dijkstra", "name": "Dijkstra 最短路"}
+        ,{"id": "graph_theory.unweighted_shortest_path", "name": "无权图最短路 BFS"}
+        ,{"id": "graph_theory.bellman_ford", "name": "Bellman-Ford / SPFA"}
+        ,{"id": "graph_theory.floyd", "name": "Floyd 最短路"}
+        ,{"id": "graph_theory.layered_shortest_path", "name": "分层图最短路"}
+        ,{"id": "graph_theory.difference_constraints", "name": "差分约束"}
+        ,{"id": "graph_theory.k_shortest_path", "name": "K 短路"}
+        ,{"id": "graph_theory.strongly_connected_components", "name": "强连通分量 SCC"}
+        ,{"id": "graph_theory.biconnected_components", "name": "点/边双连通分量"}
+        ,{"id": "graph_theory.articulation_bridge", "name": "割点与桥"}
+        ,{"id": "graph_theory.two_sat", "name": "2-SAT"}
+        ,{"id": "graph_theory.hungarian", "name": "匈牙利算法"}
+        ,{"id": "graph_theory.dinic", "name": "Dinic 最大流"}
+        ,{"id": "graph_theory.min_cost_flow", "name": "最小费用最大流"}
+        ,{"id": "graph_theory.kruskal", "name": "Kruskal 最小生成树"}
+        ,{"id": "graph_theory.tree_diameter", "name": "树的直径"}
+        ,{"id": "graph_theory.tree_decomposition", "name": "树链剖分"}
+        ,{"id": "graph_theory.tree_difference", "name": "树上差分"}
+        ,{"id": "graph_theory.virtual_tree", "name": "虚树"}
+        ,{"id": "graph_theory.centroid_decomposition", "name": "点分治"}
       ]
     },
     {
@@ -97,6 +154,17 @@
         {"id": "mathematics.game_theory", "name": "博弈论"},
         {"id": "mathematics.numerical", "name": "数值算法"},
         {"id": "mathematics.polynomial", "name": "多项式"}
+        ,{"id": "mathematics.prime_sieve", "name": "质数筛法"}
+        ,{"id": "mathematics.gcd_extended", "name": "扩展欧几里得"}
+        ,{"id": "mathematics.modular_inverse", "name": "乘法逆元"}
+        ,{"id": "mathematics.chinese_remainder", "name": "中国剩余定理"}
+        ,{"id": "mathematics.mobius_inversion", "name": "莫比乌斯反演"}
+        ,{"id": "mathematics.fast_power", "name": "快速幂"}
+        ,{"id": "mathematics.matrix_exponentiation", "name": "矩阵快速幂"}
+        ,{"id": "mathematics.gaussian_elimination", "name": "高斯消元"}
+        ,{"id": "mathematics.linear_basis", "name": "线性基"}
+        ,{"id": "mathematics.inclusion_exclusion", "name": "容斥原理"}
+        ,{"id": "mathematics.fft_ntt", "name": "FFT / NTT"}
       ]
     },
     {
@@ -108,6 +176,12 @@
         {"id": "strings.aho_corasick", "name": "AC 自动机"},
         {"id": "strings.suffix", "name": "后缀结构"},
         {"id": "strings.palindrome", "name": "回文算法"}
+        ,{"id": "strings.kmp", "name": "KMP"}
+        ,{"id": "strings.suffix_array", "name": "后缀数组 SA"}
+        ,{"id": "strings.suffix_automaton", "name": "后缀自动机 SAM"}
+        ,{"id": "strings.manacher", "name": "Manacher"}
+        ,{"id": "strings.palindromic_tree", "name": "回文自动机 PAM"}
+        ,{"id": "strings.minimal_representation", "name": "最小表示法"}
       ]
     },
     {
@@ -118,6 +192,9 @@
         {"id": "computational_geometry.convex_hull", "name": "凸包"},
         {"id": "computational_geometry.sweep_line", "name": "扫描线"},
         {"id": "computational_geometry.rotating_calipers", "name": "旋转卡壳"}
+        ,{"id": "computational_geometry.cross_product", "name": "向量、点积与叉积"}
+        ,{"id": "computational_geometry.half_plane_intersection", "name": "半平面交"}
+        ,{"id": "computational_geometry.minimum_enclosing_circle", "name": "最小圆覆盖"}
       ]
     },
     {
@@ -132,6 +209,8 @@
       "name": "随机化",
       "topics": [
         {"id": "randomized.basic", "name": "随机化算法"}
+        ,{"id": "randomized.simulated_annealing", "name": "模拟退火"}
+        ,{"id": "randomized.randomized_search", "name": "随机化搜索"}
       ]
     },
     {
@@ -150,4 +229,3 @@
     }
   ]
 }
-
