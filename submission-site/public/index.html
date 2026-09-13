@@ -32,6 +32,22 @@
         <div class="user-box"><span id="username"></span><button id="logout" class="text-button">退出</button></div>
       </div>
 
+      <section id="ai-intake" class="ai-intake" aria-labelledby="ai-title">
+        <div class="ai-heading"><div><p class="eyebrow">AI QUICK ENTRY</p><h2 id="ai-title">洛谷题目快速录入</h2><p>填写题号、统一难度、简要思路和原始代码，生成可修改的题目草稿。</p></div><span class="ai-badge">人工确认后提交</span></div>
+        <div class="grid two">
+          <label>洛谷题号<input id="ai-problem-id" maxlength="8" placeholder="例如：P4568" autocomplete="off"></label>
+          <label>题库统一难度<select id="ai-difficulty"><option>入门</option><option>简单</option><option selected>中等</option><option>困难</option><option>极难</option></select></label>
+          <label>使用模型<select id="ai-model"><option value="">正在读取可用模型…</option></select></label>
+          <div class="ai-fetch-wrap"><button id="ai-fetch" type="button" class="secondary-button">读取洛谷题目</button><p id="ai-source-status" class="ai-hint" aria-live="polite"></p></div>
+        </div>
+        <label class="ai-wide">简要题解思路<textarea id="ai-idea" rows="4" placeholder="写下你的解法核心步骤；AI 会整理成完整的待审核题解。"></textarea></label>
+        <label class="ai-wide">你的 AC 代码（C++20）<textarea id="ai-code" class="code" rows="12" spellcheck="false" placeholder="#include &lt;bits/stdc++.h&gt;"></textarea><small>代码会原样带入正式表单，AI 不会改写它。</small></label>
+        <div id="ai-manual" class="ai-manual hidden"><p>洛谷暂时无法自动读取，请手动补充题面与一组样例。</p><label>题面<textarea id="ai-manual-statement" rows="5"></textarea></label><div class="grid two"><label>样例输入<textarea id="ai-manual-input" rows="4"></textarea></label><label>样例输出<textarea id="ai-manual-output" rows="4"></textarea></label></div></div>
+        <div class="ai-actions"><button id="ai-generate" type="button" class="primary-button">生成可编辑草稿 →</button><span id="ai-usage-note">生成后请核对题意、证明、复杂度与测试。</span></div>
+        <div id="ai-message" class="message hidden" role="status" aria-live="polite"></div>
+        <div id="ai-suggestions" class="ai-suggestions hidden"></div>
+      </section>
+
       <nav id="steps" class="steps" aria-label="录入步骤"></nav>
       <form id="problem-form" novalidate>
         <section class="form-step" data-step="0">
@@ -107,6 +123,6 @@ int main() {
     </section>
   </main>
   <footer>ALGO INDEX · 题目录入台 · C++20</footer>
-  <script type="module" src="/app.js?build=20260911-2"></script>
+  <script type="module" src="/app.js?build=20260913-1"></script>
 </body>
 </html>

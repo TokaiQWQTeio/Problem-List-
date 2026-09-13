@@ -10,6 +10,7 @@ const state = {
   baseSha: "",
   original: null,
   tests: [{ name: "test01", input: "", output: "" }],
+  aiSuggestions: [],
 };
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -50,6 +51,7 @@ async function initialize() {
     $("#username").textContent = `@${data.username}`;
     renderSteps();
     renderTopics();
+    setupAiIntake();
     if (state.mode === "edit") await loadProblemForEdit();
     loadDraft();
     renderTests();
@@ -117,6 +119,9 @@ function populateForm(problem) {
 }
 
 function bindEvents() {
+  $("#ai-fetch").addEventListener("click", fetchAiSource);
+  $("#ai-generate").addEventListener("click", generateAiEntry);
+  $("#ai-suggestions").addEventListener("click", addSuggestedTest);
   $("#next").addEventListener("click", () => { if (validateStep()) { state.step += 1; updateStep(); } });
   $("#previous").addEventListener("click", () => { state.step -= 1; updateStep(); });
   $("#steps").addEventListener("click", (event) => {
@@ -143,6 +148,124 @@ function bindEvents() {
     renderTests(); syncTopics(); updateCodeSize();
   });
   $("#logout").addEventListener("click", async () => { await fetch("/auth/logout", { method: "POST" }); location.reload(); });
+}
+
+function setupAiIntake() {
+  if (state.mode === "edit") { $("#ai-intake").classList.add("hidden"); return; }
+  const models = state.session.ai_models || [];
+  $("#ai-model").innerHTML = models.length
+    ? models.map((model) => `<option value="${escapeHtml(`${model.provider}:${model.id}`)}">${escapeHtml(model.label)} · ${escapeHtml(model.id)}</option>`).join("")
+    : '<option value="">尚未配置可用模型</option>';
+  $("#ai-generate").disabled = !models.length;
+  if (!models.length) $("#ai-usage-note").textContent = "请先由站点管理员配置至少一家模型服务的 API 密钥。手动录题仍可使用。";
+}
+
+function aiProblemId() {
+  const pid = $("#ai-problem-id").value.trim().toUpperCase();
+  if (!/^P\d{4,6}$/.test(pid)) throw new Error("请输入有效的洛谷题号，例如 P4568。");
+  return pid;
+}
+
+function aiMessage(message, kind = "error") {
+  const element = $("#ai-message");
+  element.textContent = message;
+  element.className = `message ${kind}`;
+}
+
+async function fetchAiSource() {
+  const button = $("#ai-fetch");
+  try {
+    const pid = aiProblemId();
+    button.disabled = true;
+    $("#ai-source-status").textContent = "正在读取洛谷…";
+    const response = await fetch(`/api/ai/luogu/${encodeURIComponent(pid)}`);
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "读取失败");
+    $("#ai-manual").classList.toggle("hidden", Boolean(result.statement && result.samples?.length));
+    $("#ai-source-status").textContent = `${result.title || pid} · ${result.difficulty_original || "原始难度待核对"} · ${result.samples?.length || 0} 组样例`;
+    aiMessage(result.statement && result.samples?.length ? "题目资料已读取。填写思路和代码后即可生成草稿。" : "部分题面或样例缺失，请在下方补充后生成。", "success");
+  } catch (error) {
+    $("#ai-manual").classList.remove("hidden");
+    $("#ai-source-status").textContent = "自动读取失败，可手动补充。";
+    aiMessage(error.message);
+  } finally { button.disabled = false; }
+}
+
+async function generateAiEntry() {
+  const button = $("#ai-generate");
+  try {
+    const pid = aiProblemId();
+    const idea = $("#ai-idea").value.trim();
+    const code = $("#ai-code").value;
+    if (!idea || !code.trim()) throw new Error("请先填写简要题解思路和 C++20 代码。");
+    if (form.elements.namedItem("title").value.trim() && !confirm("生成结果会覆盖当前手动表单内容。确定继续吗？")) return;
+    button.disabled = true;
+    button.textContent = "正在生成草稿…";
+    aiMessage("正在分析题目与代码，通常需要几十秒。", "success");
+    const response = await fetch("/api/ai/generate", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-csrf-token": state.session.csrf },
+      body: JSON.stringify({
+        model: $("#ai-model").value, problem_id: pid, difficulty_unified: $("#ai-difficulty").value, idea, code,
+        manual_statement: $("#ai-manual-statement").value,
+        manual_sample_input: $("#ai-manual-input").value,
+        manual_sample_output: $("#ai-manual-output").value,
+      }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      if (result.needs_manual) $("#ai-manual").classList.remove("hidden");
+      throw new Error(result.error || "生成失败，请稍后重试。");
+    }
+    const source = result.source || {};
+    const fields = result.fields || {};
+    const topicIds = Array.isArray(result.topics) ? result.topics : [];
+    const problem = {
+      ...fields, problem_id: pid, url: `https://www.luogu.com.cn/problem/${pid}`,
+      source_name: "洛谷", source_id: "luogu", difficulty_unified: $("#ai-difficulty").value,
+      difficulty_original: source.difficulty_original || "", status: "已解决",
+      time_limit_seconds: source.time_limit_seconds || 2,
+      topics: topicIds, primary_topic: result.primary_topic || topicIds[0] || "",
+      code,
+      tests: Array.isArray(source.samples) && source.samples.length
+        ? source.samples.map((sample, index) => ({ name: sample.name || `sample${index + 1}`, input: sample.input || "", output: sample.output || "" }))
+        : [{ name: "test01", input: "", output: "" }],
+    };
+    if (!problem.title) problem.title = source.title || pid;
+    if (!problem.english_name) problem.english_name = `luogu-${pid.toLowerCase()}`;
+    populateForm(problem);
+    renderTests();
+    updateCodeSize();
+    state.aiSuggestions = Array.isArray(result.suggested_tests) ? result.suggested_tests : [];
+    renderAiSuggestions(result.warnings || []);
+    state.step = 0;
+    updateStep();
+    saveDraft();
+    aiMessage(`草稿已填入下方表单。请逐步核对后提交；今日还可生成 ${result.remaining} 次。`, "success");
+  } catch (error) { aiMessage(error.message); }
+  finally { button.disabled = !(state.session.ai_models || []).length; button.textContent = "生成可编辑草稿 →"; }
+}
+
+function renderAiSuggestions(warnings) {
+  const items = state.aiSuggestions;
+  const warningHtml = warnings.length ? `<div class="ai-warning"><h3>需要你核对</h3><ul>${warnings.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></div>` : "";
+  const testHtml = items.length ? `<div><h3>AI 建议的补充测试</h3><p>未运行代码，输出可能不正确；核对后再加入。</p>${items.map((test, index) => `<div class="ai-test"><p>${escapeHtml(test.reason || "边界测试建议")}</p><pre>输入：${escapeHtml(test.input || "（空）")}\n输出：${escapeHtml(test.output || "（待核对）")}</pre><button type="button" class="secondary-button" data-ai-test="${index}" ${!test.output ? "disabled" : ""}>核对后加入测试</button></div>`).join("")}</div>` : "";
+  $("#ai-suggestions").innerHTML = warningHtml + testHtml;
+  $("#ai-suggestions").classList.toggle("hidden", !warningHtml && !testHtml);
+}
+
+function addSuggestedTest(event) {
+  const button = event.target.closest("[data-ai-test]");
+  if (!button) return;
+  const test = state.aiSuggestions[Number(button.dataset.aiTest)];
+  if (!test?.output || state.tests.length >= 20) return;
+  if (!confirm("你已核对这组测试的输入和期望输出，确定加入吗？")) return;
+  if (state.step === 4) readTests();
+  state.tests.push({ name: nextTestName(), input: test.input || "", output: test.output });
+  renderTests();
+  saveDraft();
+  button.disabled = true;
+  button.textContent = "已加入";
 }
 
 function updateStep() {

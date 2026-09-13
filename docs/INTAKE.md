@@ -36,6 +36,20 @@ OAuth 请求 `public_repo read:user` 权限，用于识别账号，并代表登�
 
 PR 创建后，`update-submission-indexes.yml` 使用主分支中的可信管理脚本更新 `INDEX.md`、`indexes/` 和 `dist/data.json`。`validate.yml` 随后校验结构、检查生成文件，并对“已解决”题目编译和运行测试。所有检查通过后仍需人工审核和合并。
 
+## AI 辅助录题（洛谷）
+
+登录后，在“洛谷题目快速录入”中填写洛谷题号、题库统一难度、简要解法思路和原始 C++20 代码，选择已开放的模型，点击“生成可编辑草稿”。网站会尝试读取洛谷题目资料及官方样例；如果读取失败，可手动粘贴题面和一组样例。AI 只生成原创摘要、题解、证明、复杂度和知识点建议；原始代码不会被 AI 改写。生成结果会填入现有六步表单，必须由提交者逐项核对、修改和确认后才能创建 PR。额外测试仅作为建议，不会自动加入；加入前需确认预期输出。网站不会在线运行代码。
+
+在站点环境变量中按需配置以下机密值，至少配置一家，页面才会开放对应模型：
+
+- `AI_OPENAI_API_KEY`：OpenAI API 密钥。
+- `AI_DEEPSEEK_API_KEY`：DeepSeek API 密钥。
+- `AI_ZHIPU_API_KEY`：智谱 BigModel API 密钥。
+
+默认提供 GPT-5.6 Terra / Luna、DeepSeek Flash / V4 Pro、智谱 GLM-5.2。可选环境变量 `AI_MODELS_JSON` 用来修改模型列表，格式为 JSON 数组，如 `[{"provider":"deepseek","id":"deepseek-flash","label":"DeepSeek Flash"}]`。`provider` 只允许 `openai`、`deepseek`、`zhipu`；只有对应密钥已配置的模型才会出现在页面。不要在网页、仓库或草稿中填写密钥。
+
+每位获准的 GitHub 用户默认每天最多生成 10 次。可用 `AI_DAILY_LIMIT` 调整为 1–100。次数在调用模型前计入；读取洛谷资料不计入。AI 输出不保证正确，特别是证明、复杂度、分类和额外测试必须人工核对。提交仍走原有 PR 审核流程。
+
 ## 修改题目
 
 在公开题库中打开一道题，点击“修改题目”即可进入编辑模式。登录后，录入台会从主分支载入当前元数据、题解、C++20 代码和全部测试数据。

@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const oauthStates = sqliteTable("oauth_states", {
   stateHash: text("state_hash").primaryKey(),
@@ -16,3 +16,9 @@ export const sessions = sqliteTable("sessions", {
   expiresAt: integer("expires_at").notNull(),
   createdAt: text("created_at").notNull(),
 });
+
+export const aiUsage = sqliteTable("ai_usage", {
+  githubUserId: text("github_user_id").notNull(),
+  usageDay: text("usage_day").notNull(),
+  count: integer("count").notNull(),
+}, (table) => [primaryKey({ columns: [table.githubUserId, table.usageDay] })]);
